@@ -124,3 +124,4 @@ This project is configured for **EAS Build**.
    eas build --platform ios --profile preview
    ```
 # 1215-app
+# 1215-app
