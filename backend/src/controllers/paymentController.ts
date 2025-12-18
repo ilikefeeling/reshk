@@ -1,11 +1,7 @@
 import { Response } from 'express';
-import axios from 'axios';
 import prisma from '../utils/prisma';
 import { AuthRequest } from '../middlewares/authMiddleware';
-
-// PortOne API Keys (Should be in .env)
-const PORTONE_API_KEY = process.env.PORTONE_API_KEY || 'imp_apikey';
-const PORTONE_API_SECRET = process.env.PORTONE_API_SECRET || 'ekKoeW8RyKuT0zgaZsUtXXTLQ4AhPFW3ZGseDA6bkA5lamv9OqDMnxyeB9wqOsuO9W3Mx9YSJ4dTqJ3f';
+import iamportService from '../services/iamportService';
 
 // Verify Payment and Create Transaction
 export const verifyPayment = async (req: AuthRequest, res: Response) => {
@@ -17,25 +13,14 @@ export const verifyPayment = async (req: AuthRequest, res: Response) => {
             return res.status(401).json({ message: 'Unauthorized' });
         }
 
-        // 1. Get Access Token from PortOne
-        const tokenResponse = await axios.post('https://api.iamport.kr/users/getToken', {
-            imp_key: PORTONE_API_KEY,
-            imp_secret: PORTONE_API_SECRET,
-        });
-        const { access_token } = tokenResponse.data.response;
+        // 1. 결제 정보 조회 및 금액 검증
+        const isValid = await iamportService.verifyPaymentAmount(imp_uid, Number(amount));
 
-        // 2. Get Payment Data from PortOne
-        const paymentResponse = await axios.get(`https://api.iamport.kr/payments/${imp_uid}`, {
-            headers: { Authorization: access_token },
-        });
-        const paymentData = paymentResponse.data.response;
-
-        // 3. Verify Amount
-        if (paymentData.amount !== amount) {
-            return res.status(400).json({ message: 'Payment amount mismatch' });
+        if (!isValid) {
+            return res.status(400).json({ message: 'Payment amount mismatch or invalid payment' });
         }
 
-        // 4. Create Transaction Record
+        // 2. Transaction 레코드 생성
         const transaction = await prisma.transaction.create({
             data: {
                 userId,
@@ -43,10 +28,12 @@ export const verifyPayment = async (req: AuthRequest, res: Response) => {
                 amount,
                 type,
                 status: 'COMPLETED',
+                imp_uid,
+                merchant_uid,
             },
         });
 
-        // 5. Update Request Status if it's a Deposit
+        // 3. Update Request Status if it's a Deposit
         if (type === 'DEPOSIT' && requestId) {
             // Logic to update request status or deposit amount could go here
             // For now, just recording the transaction
@@ -75,5 +62,52 @@ export const getMyTransactions = async (req: AuthRequest, res: Response) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// Refund Payment
+export const refundPayment = async (req: AuthRequest, res: Response) => {
+    try {
+        const { transactionId, reason } = req.body;
+        const userId = req.user?.userId;
+
+        if (!userId) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        // Transaction 조회
+        const transaction = await prisma.transaction.findUnique({
+            where: { id: Number(transactionId) },
+        });
+
+        if (!transaction || transaction.userId !== userId) {
+            return res.status(404).json({ message: 'Transaction not found' });
+        }
+
+        if (transaction.status !== 'COMPLETED') {
+            return res.status(400).json({ message: 'Cannot refund this transaction' });
+        }
+
+        if (!transaction.imp_uid) {
+            return res.status(400).json({ message: 'Payment UID not found' });
+        }
+
+        // PortOne 환불 요청
+        await iamportService.cancelPayment(
+            transaction.imp_uid,
+            Number(transaction.amount),
+            reason || '사용자 요청'
+        );
+
+        // Transaction 상태 업데이트
+        await prisma.transaction.update({
+            where: { id: transaction.id },
+            data: { status: 'REFUNDED' },
+        });
+
+        res.status(200).json({ success: true, message: 'Refund successful' });
+    } catch (error: any) {
+        console.error(error);
+        res.status(500).json({ message: 'Refund failed', error: error.message });
     }
 };

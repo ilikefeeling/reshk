@@ -29,9 +29,9 @@ export const register = async (req: Request, res: Response) => {
         });
 
         // Generate token
-        const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
+        const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
 
-        res.status(201).json({ token, user: { id: user.id, email: user.email, name: user.name } });
+        res.status(201).json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role } });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
@@ -50,14 +50,15 @@ export const login = async (req: Request, res: Response) => {
 
         // Check password
         const isMatch = await bcrypt.compare(password, user.passwordHash);
+
         if (!isMatch) {
             return res.status(400).json({ message: 'Invalid credentials' });
         }
 
         // Generate token
-        const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
+        const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
 
-        res.status(200).json({ token, user: { id: user.id, email: user.email, name: user.name } });
+        res.status(200).json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role } });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
@@ -86,12 +87,102 @@ export const getProfile = async (req: any, res: Response) => {
             name: user.name,
             phone: user.phone,
             profileImage: user.profileImage,
+            role: user.role,
             stats: {
                 requests: user._count.requests,
                 reports: user._count.reports,
                 rating: 5.0 // Placeholder for now
             }
         });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// Update Push Token
+export const updatePushToken = async (req: any, res: Response) => {
+    try {
+        const userId = req.user?.userId;
+        const { pushToken } = req.body;
+
+        if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+
+        await prisma.user.update({
+            where: { id: userId },
+            data: { pushToken },
+        });
+
+        res.status(200).json({ message: 'Push token updated' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// Update Profile
+export const updateProfile = async (req: any, res: Response) => {
+    try {
+        const userId = req.user?.userId;
+        const { name, phone, profileImage } = req.body;
+
+        if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+
+        const updated = await prisma.user.update({
+            where: { id: userId },
+            data: {
+                ...(name && { name }),
+                ...(phone && { phone }),
+                ...(profileImage && { profileImage }),
+            },
+        });
+
+        res.status(200).json({
+            id: updated.id,
+            email: updated.email,
+            name: updated.name,
+            phone: updated.phone,
+            profileImage: updated.profileImage,
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// Get My Requests
+export const getMyRequests = async (req: any, res: Response) => {
+    try {
+        const userId = req.user?.userId;
+        if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+
+        const requests = await prisma.request.findMany({
+            where: { userId },
+            orderBy: { createdAt: 'desc' },
+        });
+
+        res.status(200).json(requests);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// Get My Reports
+export const getMyReports = async (req: any, res: Response) => {
+    try {
+        const userId = req.user?.userId;
+        if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+
+        const reports = await prisma.report.findMany({
+            where: { reporterId: userId },
+            orderBy: { createdAt: 'desc' },
+            include: {
+                request: { select: { title: true, status: true } },
+            },
+        });
+
+        res.status(200).json(reports);
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });

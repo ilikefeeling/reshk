@@ -25,6 +25,7 @@ export const createReport = async (req: AuthRequest, res: Response) => {
                 description,
                 images: images || [],
                 location,
+                status: 'ACCEPTED' // Temporarily bypass admin approval for reports
             },
         });
 
