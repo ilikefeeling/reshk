@@ -45,7 +45,7 @@ export default function LoginScreen({ navigation, route }: any) {
         }
 
         const redirectUri = `${origin}/api/auth/kakao/callback`;
-        const authUrl = `https://kauth.kakao.com/oauth/authorize?client_id=50fabbcf9a9d8375b8655c807a3d3f0f&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code`;
+        const authUrl = `https://kauth.kakao.com/oauth/authorize?client_id=2bc4c5e9fef481cadb721dabddaf85b6&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code`;
 
         window.location.href = authUrl;
     };

@@ -78,7 +78,7 @@ export const kakaoLogin = async (req: Request, res: Response) => {
         const tokenResponse = await axios.post('https://kauth.kakao.com/oauth/token', null, {
             params: {
                 grant_type: 'authorization_code',
-                client_id: process.env.KAKAO_REST_API_KEY,
+                client_id: '2bc4c5e9fef481cadb721dabddaf85b6',
                 redirect_uri: redirectUri,
                 code,
             },
@@ -141,7 +141,7 @@ export const kakaoCallback = async (req: Request, res: Response) => {
         const tokenResponse = await axios.post('https://kauth.kakao.com/oauth/token', null, {
             params: {
                 grant_type: 'authorization_code',
-                client_id: process.env.KAKAO_REST_API_KEY,
+                client_id: '2bc4c5e9fef481cadb721dabddaf85b6',
                 redirect_uri: redirectUri,
                 code,
             },
