@@ -124,6 +124,60 @@ export const kakaoLogin = async (req: Request, res: Response) => {
     }
 };
 
+export const kakaoCallback = async (req: Request, res: Response) => {
+    try {
+        const { code } = req.query;
+        if (!code) return res.redirect('https://www.lookingall.com/login?error=no_code');
+
+        // Reuse the logic from kakaoLogin but for a GET request/redirect
+        const tokenResponse = await axios.post('https://kauth.kakao.com/oauth/token', null, {
+            params: {
+                grant_type: 'authorization_code',
+                client_id: process.env.KAKAO_REST_API_KEY,
+                redirect_uri: process.env.KAKAO_REDIRECT_URI,
+                code,
+            },
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
+            },
+        });
+
+        const accessToken = tokenResponse.data.access_token;
+        const userResponse = await axios.get('https://kapi.kakao.com/v2/user/me', {
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+                'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
+            },
+        });
+
+        const kakaoUser = userResponse.data;
+        const email = kakaoUser.kakao_account?.email || `kakao_${kakaoUser.id}@kakao.user`;
+        const name = kakaoUser.properties?.nickname || 'Kakao User';
+        const profileImage = kakaoUser.properties?.profile_image;
+
+        let user = await prisma.user.findUnique({ where: { email } });
+        if (!user) {
+            user = await prisma.user.create({
+                data: {
+                    email,
+                    name,
+                    profileImage,
+                    passwordHash: 'SOCIAL_LOGIN',
+                },
+            });
+        }
+
+        const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+
+        // Redirect back to frontend with token
+        const frontendUser = encodeURIComponent(JSON.stringify({ id: user.id, email: user.email, name: user.name, role: user.role, profileImage: user.profileImage }));
+        res.redirect(`https://www.lookingall.com/?token=${token}&user=${frontendUser}`);
+    } catch (error: any) {
+        console.error('Kakao Callback Error:', error.response?.data || error.message);
+        res.redirect('https://www.lookingall.com/login?error=callback_failed');
+    }
+};
+
 export const getProfile = async (req: any, res: Response) => {
     try {
         const userId = req.user?.userId;

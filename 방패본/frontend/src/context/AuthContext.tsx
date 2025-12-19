@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type AuthContextType = {
@@ -29,6 +30,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const checkLoginStatus = async () => {
         try {
+            // Priority 1: Check if we just redirected from social login (Web only)
+            if (Platform.OS === 'web') {
+                const params = new URLSearchParams(window.location.search);
+                const queryToken = params.get('token');
+                const queryUser = params.get('user');
+
+                if (queryToken && queryUser) {
+                    console.log('Social login redirect detected on web');
+                    const parsedUser = JSON.parse(decodeURIComponent(queryUser));
+                    await login(queryToken, parsedUser);
+
+                    // Clear query params to avoid re-login on refresh
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                    setIsLoading(false);
+                    return;
+                }
+            }
+
             const token = await AsyncStorage.getItem('token');
             if (token && token !== 'null' && token !== 'undefined') {
                 // Validate token with backend

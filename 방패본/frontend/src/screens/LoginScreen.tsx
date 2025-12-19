@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Alert, Modal, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, Modal, StyleSheet, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { WebView } from 'react-native-webview';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+
+// WebView should only be imported on non-web platforms
+let WebView: any;
+if (Platform.OS !== 'web') {
+    WebView = require('react-native-webview').WebView;
+}
 
 const KAKAO_AUTH_URL = `https://kauth.kakao.com/oauth/authorize?client_id=50fabbcf9a9d8375b8655c807a3d3f0f&redirect_uri=https://www.lookingall.com/api/auth/kakao/callback&response_type=code`;
 
@@ -35,6 +40,16 @@ export default function LoginScreen({ navigation, route }: any) {
             }
         }
     }, [isLoggedIn, navigation, redirectTarget]);
+
+    const handleKakaoLogin = () => {
+        if (Platform.OS === 'web') {
+            // For Web, direct redirect
+            window.location.href = KAKAO_AUTH_URL;
+        } else {
+            // For Native, show WebView Modal
+            setShowKakao(true);
+        }
+    };
 
     const handleKakaoCode = async (code: string) => {
         try {
@@ -77,7 +92,7 @@ export default function LoginScreen({ navigation, route }: any) {
             <View style={styles.buttonContainer}>
                 <TouchableOpacity
                     style={styles.kakaoButton}
-                    onPress={() => setShowKakao(true)}
+                    onPress={handleKakaoLogin}
                     disabled={loading}
                 >
                     <Text style={styles.kakaoButtonText}>카카오톡으로 로그인</Text>
@@ -88,21 +103,23 @@ export default function LoginScreen({ navigation, route }: any) {
                 </Text>
             </View>
 
-            <Modal visible={showKakao} animationType="slide">
-                <SafeAreaView style={{ flex: 1 }}>
-                    <TouchableOpacity
-                        style={styles.closeButton}
-                        onPress={() => setShowKakao(false)}
-                    >
-                        <Text style={styles.closeButtonText}>닫기</Text>
-                    </TouchableOpacity>
-                    <WebView
-                        source={{ uri: KAKAO_AUTH_URL }}
-                        onNavigationStateChange={onNavigationStateChange}
-                        javaScriptEnabled={true}
-                    />
-                </SafeAreaView>
-            </Modal>
+            {Platform.OS !== 'web' && (
+                <Modal visible={showKakao} animationType="slide">
+                    <SafeAreaView style={{ flex: 1 }}>
+                        <TouchableOpacity
+                            style={styles.closeButton}
+                            onPress={() => setShowKakao(false)}
+                        >
+                            <Text style={styles.closeButtonText}>닫기</Text>
+                        </TouchableOpacity>
+                        <WebView
+                            source={{ uri: KAKAO_AUTH_URL }}
+                            onNavigationStateChange={onNavigationStateChange}
+                            javaScriptEnabled={true}
+                        />
+                    </SafeAreaView>
+                </Modal>
+            )}
         </SafeAreaView>
     );
 }
