@@ -6,10 +6,10 @@
       "use": "@vercel/node"
     },
     {
-      "src": "방패본/package.json",
+      "src": "package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "frontend/dist"
+        "distDir": "방패본/frontend/dist"
       }
     }
   ],
@@ -20,7 +20,7 @@
     },
     {
       "source": "/(.*)",
-      "destination": "방패본/frontend/dist/$1"
+      "destination": "/$1"
     }
   ]
 }
