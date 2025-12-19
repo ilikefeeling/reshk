@@ -20,7 +20,7 @@
     },
     {
       "source": "/(.*)",
-      "destination": "/방패본/frontend/dist/$1"
+      "destination": "방패본/frontend/dist/$1"
     }
   ]
 }
