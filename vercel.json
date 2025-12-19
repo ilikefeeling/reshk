@@ -1,26 +1,26 @@
 {
-    "version": 2,
-    "builds": [
-        {
-            "src": "방패본/backend/src/index.ts",
-            "use": "@vercel/node"
-        },
-        {
-            "src": "방패본/package.json",
-            "use": "@vercel/static-build",
-            "config": {
-                "distDir": "frontend/dist"
-            }
-        }
-    ],
-    "rewrites": [
-        {
-            "source": "/api/(.*)",
-            "destination": "방패본/backend/src/index.ts"
-        },
-        {
-            "source": "/(.*)",
-            "destination": "방패본/frontend/dist/$1"
-        }
-    ]
+  "version": 2,
+  "builds": [
+    {
+      "src": "방패본/backend/src/index.ts",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "방패본/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "frontend/dist"
+      }
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "방패본/backend/src/index.ts"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/방패본/frontend/dist/$1"
+    }
+  ]
 }
