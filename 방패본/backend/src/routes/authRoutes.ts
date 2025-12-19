@@ -1,11 +1,12 @@
 import { Router } from 'express';
-import { register, login, getProfile, updatePushToken, updateProfile, getMyRequests, getMyReports, getUserPublicProfile } from '../controllers/authController';
+import { register, login, kakaoLogin, getProfile, updatePushToken, updateProfile, getMyRequests, getMyReports, getUserPublicProfile } from '../controllers/authController';
 import { authenticateToken } from '../middlewares/authMiddleware';
 
 const router = Router();
 
 router.post('/register', register);
 router.post('/login', login);
+router.post('/kakao', kakaoLogin);
 router.get('/me', authenticateToken, getProfile);
 router.post('/push-token', authenticateToken, updatePushToken);
 router.put('/profile', authenticateToken, updateProfile);

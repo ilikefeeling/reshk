@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, TextInput, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, Modal, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { WebView } from 'react-native-webview';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 
+const KAKAO_AUTH_URL = `https://kauth.kakao.com/oauth/authorize?client_id=50fabbcf9a9d8375b8655c807a3d3f0f&redirect_uri=https://www.lookingall.com/api/auth/kakao/callback&response_type=code`;
+
 export default function LoginScreen({ navigation, route }: any) {
     const { login, isLoggedIn } = useAuth();
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+    const [showKakao, setShowKakao] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     const redirectTarget = route.params?.redirect;
 
@@ -34,76 +36,131 @@ export default function LoginScreen({ navigation, route }: any) {
         }
     }, [isLoggedIn, navigation, redirectTarget]);
 
-    const [loading, setLoading] = useState(false);
-    const [errorMsg, setErrorMsg] = useState('');
-
-    const handleLogin = async () => {
-        setErrorMsg('');
-        if (!email || !password) {
-            setErrorMsg('이메일과 비밀번호를 입력해주세요.');
-            return;
-        }
-
+    const handleKakaoCode = async (code: string) => {
         try {
             setLoading(true);
-            const response = await api.post('/auth/login', { email, password });
+            const response = await api.post('/auth/kakao', { code });
             const { token, user } = response.data;
 
             if (token) {
                 await login(token, user);
             } else {
-                setErrorMsg('서버로부터 올바르지 않은 응답을 받았습니다.');
+                Alert.alert('오류', '로그인 응답이 올바르지 않습니다.');
             }
         } catch (error: any) {
-            console.error('Login Error:', error);
-            const message = error.response?.data?.message || '로그인에 실패했습니다. 연결 상태를 확인해주세요.';
-            setErrorMsg(message);
+            console.error('Kakao login fail:', error.response?.data || error.message);
+            Alert.alert('로그인 실패', '카카오 로그인 처리 중 오류가 발생했습니다.');
         } finally {
             setLoading(false);
+            setShowKakao(false);
         }
     };
+
+    const onNavigationStateChange = (navState: any) => {
+        const { url } = navState;
+        if (url.includes('code=')) {
+            const code = url.split('code=')[1].split('&')[0];
+            handleKakaoCode(code);
+        } else if (url.includes('error=')) {
+            setShowKakao(false);
+            Alert.alert('로그인 취소', '카카오 로그인이 취소되었습니다.');
+        }
+    };
+
     return (
-        <SafeAreaView className="flex-1 bg-white justify-center px-6">
-            <View className="items-center mb-10">
-                <Text className="text-3xl font-bold text-blue-600">LookingAll</Text>
-                <Text className="text-gray-500 mt-2">Find what you need, help others.</Text>
+        <SafeAreaView style={styles.container}>
+            <View style={styles.header}>
+                <Text style={styles.title}>LookingAll</Text>
+                <Text style={styles.subtitle}>Find what you need, help others.</Text>
             </View>
 
-            <View className="space-y-4">
-                {errorMsg ? (
-                    <Text className="text-red-500 text-sm mb-2 text-center">{errorMsg}</Text>
-                ) : null}
-                <TextInput
-                    placeholder="Email"
-                    className="w-full bg-gray-100 p-4 rounded-lg"
-                    value={email}
-                    onChangeText={setEmail}
-                    autoCapitalize="none"
-                    keyboardType="email-address"
-                />
-                <TextInput
-                    placeholder="Password"
-                    secureTextEntry
-                    className="w-full bg-gray-100 p-4 rounded-lg"
-                    value={password}
-                    onChangeText={setPassword}
-                />
-
+            <View style={styles.buttonContainer}>
                 <TouchableOpacity
-                    className={`w-full bg-blue-600 p-4 rounded-lg items-center ${loading ? 'opacity-50' : ''}`}
-                    onPress={handleLogin}
+                    style={styles.kakaoButton}
+                    onPress={() => setShowKakao(true)}
                     disabled={loading}
                 >
-                    <Text className="text-white font-bold text-lg">{loading ? '로그인 중...' : '로그인'}</Text>
+                    <Text style={styles.kakaoButtonText}>카카오톡으로 로그인</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity
-                    className="w-full p-4 items-center"
-                    onPress={() => navigation.navigate('Signup')}
-                >
-                    <Text className="text-blue-600">계정이 없으신가요? 회원가입</Text>
-                </TouchableOpacity>
+                <Text style={styles.footerText}>
+                    로그인 시 이용약관 및 개인정보 처리방침에 동의하는 것으로 간주됩니다.
+                </Text>
             </View>
+
+            <Modal visible={showKakao} animationType="slide">
+                <SafeAreaView style={{ flex: 1 }}>
+                    <TouchableOpacity
+                        style={styles.closeButton}
+                        onPress={() => setShowKakao(false)}
+                    >
+                        <Text style={styles.closeButtonText}>닫기</Text>
+                    </TouchableOpacity>
+                    <WebView
+                        source={{ uri: KAKAO_AUTH_URL }}
+                        onNavigationStateChange={onNavigationStateChange}
+                        javaScriptEnabled={true}
+                    />
+                </SafeAreaView>
+            </Modal>
         </SafeAreaView>
     );
 }
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#fff',
+        justifyContent: 'center',
+        paddingHorizontal: 24,
+    },
+    header: {
+        alignItems: 'center',
+        marginBottom: 40,
+    },
+    title: {
+        fontSize: 32,
+        fontWeight: 'bold',
+        color: '#2563eb',
+    },
+    subtitle: {
+        fontSize: 16,
+        color: '#6b7280',
+        marginTop: 8,
+    },
+    buttonContainer: {
+        marginTop: 20,
+    },
+    kakaoButton: {
+        backgroundColor: '#FEE500',
+        paddingVertical: 16,
+        borderRadius: 12,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    kakaoButtonText: {
+        color: '#000',
+        fontSize: 18,
+        fontWeight: '600',
+    },
+    footerText: {
+        textAlign: 'center',
+        fontSize: 12,
+        color: '#9ca3af',
+        marginTop: 24,
+    },
+    closeButton: {
+        padding: 16,
+        alignItems: 'flex-end',
+        backgroundColor: '#f3f4f6',
+    },
+    closeButtonText: {
+        fontSize: 16,
+        color: '#ef4444',
+        fontWeight: 'bold',
+    },
+});

@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '../utils/prisma';
+import axios from 'axios';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
 
@@ -62,6 +63,64 @@ export const login = async (req: Request, res: Response) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
+    }
+};
+
+export const kakaoLogin = async (req: Request, res: Response) => {
+    try {
+        const { code } = req.body;
+        if (!code) return res.status(400).json({ message: 'Code is required' });
+
+        // Change code for a token
+        const tokenResponse = await axios.post('https://kauth.kakao.com/oauth/token', null, {
+            params: {
+                grant_type: 'authorization_code',
+                client_id: process.env.KAKAO_REST_API_KEY,
+                redirect_uri: process.env.KAKAO_REDIRECT_URI,
+                code,
+            },
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
+            },
+        });
+
+        const accessToken = tokenResponse.data.access_token;
+
+        // Get user info from Kakao
+        const userResponse = await axios.get('https://kapi.kakao.com/v2/user/me', {
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+                'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
+            },
+        });
+
+        const kakaoUser = userResponse.data;
+        const email = kakaoUser.kakao_account?.email || `kakao_${kakaoUser.id}@kakao.user`;
+        const name = kakaoUser.properties?.nickname || 'Kakao User';
+        const profileImage = kakaoUser.properties?.profile_image;
+
+        // Upsert user in our database
+        // We use email as the unique identifier for simplicity, or we could add a kakaoId field
+        let user = await prisma.user.findUnique({ where: { email } });
+
+        if (!user) {
+            user = await prisma.user.create({
+                data: {
+                    email,
+                    name,
+                    profileImage,
+                    passwordHash: 'SOCIAL_LOGIN', // Placeholder
+                },
+            });
+        }
+
+        // Generate our own JWT
+        const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+
+        res.status(200).json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role, profileImage: user.profileImage } });
+    } catch (error: any) {
+        console.error('Kakao Login Error:', error.response?.data || error.message);
+        res.status(500).json({ message: 'Social login failed' });
     }
 };
 
