@@ -1,0 +1,36 @@
+commit 262336f27eca3bde597788f9c2fbbd992e35b79a
+Author: Rio Shin <ilikefeeling@gmail.com>
+Date:   Fri Dec 19 00:19:43 2025 +0900
+
+    완벽한 배포 준비 완료
+
+diff --git a/frontend/src/navigation/MainTabNavigator.tsx b/frontend/src/navigation/MainTabNavigator.tsx
+new file mode 100644
+index 00000000..3ed53b90
+--- /dev/null
++++ b/frontend/src/navigation/MainTabNavigator.tsx
+@@ -0,0 +1,24 @@
++import React from 'react';
++import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
++import { Ionicons } from '@expo/vector-icons';
++import HomePage from '../pages/HomePage';
++import ChatListScreen from '../screens/ChatListScreen';
++import ProfileScreen from '../screens/ProfileScreen';
++import BottomNav from '../components/BottomNav';
++
++const Tab = createBottomTabNavigator();
++
++export default function MainTabNavigator() {
++    return (
++        <Tab.Navigator
++            screenOptions={{
++                headerShown: false,
++            }}
++            tabBar={(props) => <BottomNav {...props} />}
++        >
++            <Tab.Screen name="Home" component={HomePage} />
++            <Tab.Screen name="ChatList" component={ChatListScreen} options={{ title: 'Chat' }} />
++            <Tab.Screen name="Profile" component={ProfileScreen} />
++        </Tab.Navigator>
++    );
++}
