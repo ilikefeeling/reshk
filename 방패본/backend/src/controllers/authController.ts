@@ -72,11 +72,13 @@ export const kakaoLogin = async (req: Request, res: Response) => {
         if (!code) return res.status(400).json({ message: 'Code is required' });
 
         // Change code for a token
+        const redirectUri = process.env.KAKAO_REDIRECT_URI || `${req.protocol}://${req.get('host')}/api/auth/kakao/callback`;
+
         const tokenResponse = await axios.post('https://kauth.kakao.com/oauth/token', null, {
             params: {
                 grant_type: 'authorization_code',
                 client_id: process.env.KAKAO_REST_API_KEY,
-                redirect_uri: process.env.KAKAO_REDIRECT_URI,
+                redirect_uri: redirectUri,
                 code,
             },
             headers: {
@@ -130,11 +132,14 @@ export const kakaoCallback = async (req: Request, res: Response) => {
         if (!code) return res.redirect('https://www.lookingall.com/login?error=no_code');
 
         // Reuse the logic from kakaoLogin but for a GET request/redirect
+        const origin = `${req.protocol}://${req.get('host')}`;
+        const redirectUri = process.env.KAKAO_REDIRECT_URI || `${origin}/api/auth/kakao/callback`;
+
         const tokenResponse = await axios.post('https://kauth.kakao.com/oauth/token', null, {
             params: {
                 grant_type: 'authorization_code',
                 client_id: process.env.KAKAO_REST_API_KEY,
-                redirect_uri: process.env.KAKAO_REDIRECT_URI,
+                redirect_uri: redirectUri,
                 code,
             },
             headers: {

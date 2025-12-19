@@ -36,7 +36,11 @@ export default function LoginScreen({ navigation, route }: any) {
     const handleKakaoLogin = () => {
         setLoading(true);
         // Direct redirect for Web
-        window.location.href = KAKAO_AUTH_URL;
+        const origin = window.location.origin;
+        const redirectUri = `${origin}/api/auth/kakao/callback`;
+        const authUrl = `https://kauth.kakao.com/oauth/authorize?client_id=50fabbcf9a9d8375b8655c807a3d3f0f&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code`;
+
+        window.location.href = authUrl;
     };
 
     return (
