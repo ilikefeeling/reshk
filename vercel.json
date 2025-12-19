@@ -9,7 +9,7 @@
             "src": "방패본/package.json",
             "use": "@vercel/static-build",
             "config": {
-                "distDir": "방패본/frontend/dist"
+                "distDir": "frontend/dist"
             }
         }
     ],
@@ -20,7 +20,7 @@
         },
         {
             "source": "/(.*)",
-            "destination": "/$1"
+            "destination": "방패본/frontend/dist/$1"
         }
     ]
 }
