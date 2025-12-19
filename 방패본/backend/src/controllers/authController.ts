@@ -73,6 +73,7 @@ export const kakaoLogin = async (req: Request, res: Response) => {
 
         // Change code for a token
         const redirectUri = process.env.KAKAO_REDIRECT_URI || `${req.protocol}://${req.get('host')}/api/auth/kakao/callback`;
+        console.log(`[DEBUG] Kakao Login POST: protocol=${req.protocol}, host=${req.get('host')}, redirectUri=${redirectUri}`);
 
         const tokenResponse = await axios.post('https://kauth.kakao.com/oauth/token', null, {
             params: {
@@ -134,6 +135,8 @@ export const kakaoCallback = async (req: Request, res: Response) => {
         // Reuse the logic from kakaoLogin but for a GET request/redirect
         const origin = `${req.protocol}://${req.get('host')}`;
         const redirectUri = process.env.KAKAO_REDIRECT_URI || `${origin}/api/auth/kakao/callback`;
+
+        console.log(`[DEBUG] Kakao Callback: protocol=${req.protocol}, host=${req.get('host')}, redirectUri=${redirectUri}`);
 
         const tokenResponse = await axios.post('https://kauth.kakao.com/oauth/token', null, {
             params: {

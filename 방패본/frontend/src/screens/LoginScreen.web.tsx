@@ -36,7 +36,14 @@ export default function LoginScreen({ navigation, route }: any) {
     const handleKakaoLogin = () => {
         setLoading(true);
         // Direct redirect for Web
-        const origin = window.location.origin;
+        const hostname = window.location.hostname;
+        let origin = window.location.origin;
+
+        // Enforce www for production to match Kakao settings more reliably
+        if (hostname.includes('lookingall.com')) {
+            origin = 'https://www.lookingall.com';
+        }
+
         const redirectUri = `${origin}/api/auth/kakao/callback`;
         const authUrl = `https://kauth.kakao.com/oauth/authorize?client_id=50fabbcf9a9d8375b8655c807a3d3f0f&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code`;
 
