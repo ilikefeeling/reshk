@@ -3,11 +3,8 @@ import path from 'path';
 import crypto from 'crypto';
 import fs from 'fs';
 
-// uploads 폴더가 없으면 생성
+// uploads 폴더 설정 (Vercel 등 읽기 전용 환경에서는 생성하지 않음)
 const uploadDir = 'uploads';
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
 
 // 파일 저장 설정
 const storage = multer.diskStorage({
