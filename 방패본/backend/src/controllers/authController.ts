@@ -75,17 +75,27 @@ export const kakaoLogin = async (req: Request, res: Response) => {
         const hostname = req.get('host') || '';
         const protocol = (req.headers['x-forwarded-proto'] as string) || req.protocol || 'http';
         const origin = `${protocol}://${hostname}`;
-        const redirectUri = process.env.KAKAO_REDIRECT_URI || `${origin}/api/auth/kakao/callback`;
+
+        // redirectUri MUST match whatever was sent during the authorization code request
+        // We prioritize the incoming request origin to ensure they match perfectly (fixing KOE006/invalid_client)
+        const redirectUri = `${origin}/api/auth/kakao/callback`;
 
         console.log(`[DEBUG] Kakao Login POST: origin=${origin}, redirectUri=${redirectUri}`);
 
+        const tokenParams: any = {
+            grant_type: 'authorization_code',
+            client_id: '2bc4c5e9fef481cadb721dabddaf85b6',
+            redirect_uri: redirectUri,
+            code,
+        };
+
+        // Add client_secret ONLY if provided in env (fixes invalid_client if secret is enabled on Kakao)
+        if (process.env.KAKAO_CLIENT_SECRET) {
+            tokenParams.client_secret = process.env.KAKAO_CLIENT_SECRET;
+        }
+
         const tokenResponse = await axios.post('https://kauth.kakao.com/oauth/token', null, {
-            params: {
-                grant_type: 'authorization_code',
-                client_id: '2bc4c5e9fef481cadb721dabddaf85b6',
-                redirect_uri: redirectUri,
-                code,
-            },
+            params: tokenParams,
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
             },
@@ -148,23 +158,25 @@ export const kakaoCallback = async (req: Request, res: Response) => {
         // Use state to determine where to redirect back after login
         let frontendOrigin = state ? decodeURIComponent(state as string) : 'https://www.lookingall.com';
 
-        // Ensure redirectUri matches EXACTLY what was sent to Kakao
-        // If it's production, we always use the official redirect URI
-        let redirectUri = process.env.KAKAO_REDIRECT_URI || `${origin}/api/auth/kakao/callback`;
-        if (hostname.includes('lookingall.com')) {
-            redirectUri = 'https://www.lookingall.com/api/auth/kakao/callback';
-        }
+        // redirectUri MUST match what was sent during the code request
+        const redirectUri = `${origin}/api/auth/kakao/callback`;
 
         console.log(`[DEBUG] Kakao Callback: protocol=${req.protocol}, host=${req.get('host')}, redirectUri=${redirectUri}`);
 
         console.log('[DEBUG] Step 1: Requesting Kakao Token...');
+        const tokenParams: any = {
+            grant_type: 'authorization_code',
+            client_id: '2bc4c5e9fef481cadb721dabddaf85b6',
+            redirect_uri: redirectUri,
+            code,
+        };
+
+        if (process.env.KAKAO_CLIENT_SECRET) {
+            tokenParams.client_secret = process.env.KAKAO_CLIENT_SECRET;
+        }
+
         const tokenResponse = await axios.post('https://kauth.kakao.com/oauth/token', null, {
-            params: {
-                grant_type: 'authorization_code',
-                client_id: '2bc4c5e9fef481cadb721dabddaf85b6',
-                redirect_uri: redirectUri,
-                code,
-            },
+            params: tokenParams,
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
             },
