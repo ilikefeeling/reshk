@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middlewares/authMiddleware';
-import exifr from 'exifr';
+// Removed static import of exifr to avoid ESM conflict in CommonJS
 import path from 'path';
 
 /**
@@ -23,8 +23,9 @@ export const uploadImages = async (req: AuthRequest, res: Response) => {
 
             try {
                 // EXIF 메타데이터 추출 (GPS, 날짜 등)
-                // file.path contains the local path to the file
-                metadata = await exifr.parse(file.path);
+                // Dynamic import for ESM-only exifr package
+                const exifr = await import('exifr');
+                metadata = await exifr.default.parse(file.path);
             } catch (err) {
                 console.warn(`Failed to extract metadata for ${file.filename}:`, err);
             }
