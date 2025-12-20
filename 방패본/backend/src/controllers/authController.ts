@@ -138,6 +138,7 @@ export const kakaoCallback = async (req: Request, res: Response) => {
 
         console.log(`[DEBUG] Kakao Callback: protocol=${req.protocol}, host=${req.get('host')}, redirectUri=${redirectUri}`);
 
+        console.log('[DEBUG] Step 1: Requesting Kakao Token...');
         const tokenResponse = await axios.post('https://kauth.kakao.com/oauth/token', null, {
             params: {
                 grant_type: 'authorization_code',
@@ -149,22 +150,27 @@ export const kakaoCallback = async (req: Request, res: Response) => {
                 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
             },
         });
+        console.log('[DEBUG] Step 1 Success: Token received');
 
         const accessToken = tokenResponse.data.access_token;
+        console.log('[DEBUG] Step 2: Requesting User Info...');
         const userResponse = await axios.get('https://kapi.kakao.com/v2/user/me', {
             headers: {
                 Authorization: `Bearer ${accessToken}`,
                 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
             },
         });
+        console.log('[DEBUG] Step 2 Success: User info received', userResponse.data.id);
 
         const kakaoUser = userResponse.data;
         const email = kakaoUser.kakao_account?.email || `kakao_${kakaoUser.id}@kakao.user`;
         const name = kakaoUser.properties?.nickname || 'Kakao User';
         const profileImage = kakaoUser.properties?.profile_image;
 
+        console.log('[DEBUG] Step 3: DB Lookup/Create for email:', email);
         let user = await prisma.user.findUnique({ where: { email } });
         if (!user) {
+            console.log('[DEBUG] Step 3: User not found, creating...');
             user = await prisma.user.create({
                 data: {
                     email,
@@ -173,13 +179,20 @@ export const kakaoCallback = async (req: Request, res: Response) => {
                     passwordHash: 'SOCIAL_LOGIN',
                 },
             });
+            console.log('[DEBUG] Step 3: User created');
+        } else {
+            console.log('[DEBUG] Step 3: User found', user.id);
         }
 
+        console.log('[DEBUG] Step 4: Generating JWT...');
         const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+        console.log('[DEBUG] Step 4 Success: JWT generated');
 
         // Redirect back to frontend with token
         const frontendUser = encodeURIComponent(JSON.stringify({ id: user.id, email: user.email, name: user.name, role: user.role, profileImage: user.profileImage }));
-        res.redirect(`https://www.lookingall.com/?token=${token}&user=${frontendUser}`);
+        const finalRedirectUrl = `https://www.lookingall.com/?token=${token}&user=${frontendUser}`;
+        console.log('[DEBUG] Redirecting to:', finalRedirectUrl);
+        res.redirect(finalRedirectUrl);
     } catch (error: any) {
         console.error('Kakao Callback Error:', error.response?.data || error.message);
         res.redirect('https://www.lookingall.com/login?error=callback_failed');
