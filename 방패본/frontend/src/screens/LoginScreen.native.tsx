@@ -11,13 +11,13 @@ if (Platform.OS !== 'web') {
 }
 
 const getKakaoAuthUrl = () => {
-    // Dynamically determine origin from api.defaults.baseURL
-    // Ensure we don't have trailing slashes or duplicate /api
-    const apiURL = (api.defaults.baseURL || 'http://localhost:3002/api').replace(/\/+$/, '');
-    const origin = apiURL.endsWith('/api') ? apiURL.slice(0, -4) : apiURL;
-    const redirectUri = `${origin}/api/auth/kakao/callback`;
+    // redirectUri MUST be the backend callback endpoint
+    const apiBase = (api.defaults.baseURL || 'http://localhost:3002/api').replace(/\/+$/, '');
+    const redirectUri = `${apiBase}/auth/kakao/callback`;
 
-    // Add state to track the origin for the backend if needed
+    // Add state to track the origin for the backend
+    // For Native, we use the base of apiBase (usually stripping /api)
+    const origin = apiBase.endsWith('/api') ? apiBase.slice(0, -4) : apiBase;
     const state = encodeURIComponent(origin);
 
     return `https://kauth.kakao.com/oauth/authorize?client_id=2bc4c5e9fef481cadb721dabddaf85b6&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&state=${state}`;

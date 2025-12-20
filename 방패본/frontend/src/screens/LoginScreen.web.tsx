@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
+import api from '../utils/api';
 
 
 export default function LoginScreen({ navigation, route }: any) {
@@ -39,17 +40,15 @@ export default function LoginScreen({ navigation, route }: any) {
     };
 
     const getKakaoAuthUrl = () => {
-        const origin = window.location.origin;
-        const hostname = window.location.hostname;
+        const frontendOrigin = window.location.origin;
 
-        // Enforce www for production to match Kakao settings more reliably
-        let effectiveOrigin = origin;
-        if (hostname.includes('lookingall.com')) {
-            effectiveOrigin = 'https://www.lookingall.com';
-        }
+        // redirectUri MUST be the backend callback endpoint
+        // api.defaults.baseURL is usually '.../api'
+        const apiBase = (api.defaults.baseURL || 'http://localhost:3002/api').replace(/\/+$/, '');
+        const redirectUri = `${apiBase}/auth/kakao/callback`;
 
-        const redirectUri = `${effectiveOrigin}/api/auth/kakao/callback`;
-        const state = encodeURIComponent(origin); // Send current origin as state
+        // Use state to tell the backend where to redirect back after processing
+        const state = encodeURIComponent(frontendOrigin);
 
         return `https://kauth.kakao.com/oauth/authorize?client_id=2bc4c5e9fef481cadb721dabddaf85b6&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&state=${state}`;
     };
