@@ -5,11 +5,13 @@ import { useAuth } from '../context/AuthContext';
 
 export default function Header() {
     const navigation = useNavigation();
-    const { isLoggedIn } = useAuth();
+    const { isLoggedIn, logout } = useAuth();
 
     const handleLoginPress = () => {
         if (isLoggedIn) {
-            navigation.navigate('Main', { screen: 'Profile' });
+            // Change behavior to Logout if already logged in
+            logout();
+            alert('로그아웃 되었습니다.');
         } else {
             navigation.navigate('Login');
         }
@@ -27,17 +29,17 @@ export default function Header() {
                 <Text className="font-bold text-lg">Looking</Text>
             </View>
 
-            {/* Right: Notification and Login */}
+            {/* Right: Notification and Login/Logout */}
             <View className="flex-row items-center space-x-2">
                 <TouchableOpacity aria-label="Notifications" className="mr-2">
                     <Text className="text-xl">🔔</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                    className={`${isLoggedIn ? 'bg-gray-200' : 'bg-blue-500'} rounded px-2 py-1`}
+                    className={`${isLoggedIn ? 'bg-red-500' : 'bg-blue-500'} rounded px-2 py-1`}
                     onPress={handleLoginPress}
                 >
-                    <Text className={`text-sm ${isLoggedIn ? 'text-black' : 'text-white'}`}>
-                        {isLoggedIn ? '마이' : '로그인'}
+                    <Text className="text-sm text-white">
+                        {isLoggedIn ? '로그아웃' : '로그인'}
                     </Text>
                 </TouchableOpacity>
             </View>
