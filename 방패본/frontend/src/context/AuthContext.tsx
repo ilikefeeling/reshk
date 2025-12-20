@@ -38,11 +38,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
                 if (queryToken && queryUser) {
                     console.log('Social login redirect detected on web');
+
+                    // Clear query params IMMEDIATELY to prevent loop on any subsequent re-render
+                    window.history.replaceState({}, document.title, window.location.pathname);
+
                     const parsedUser = JSON.parse(decodeURIComponent(queryUser));
+
+                    // Show alert and then login
+                    window.alert('로그인에 성공했습니다!');
                     await login(queryToken, parsedUser);
 
-                    // Clear query params to avoid re-login on refresh
-                    window.history.replaceState({}, document.title, window.location.pathname);
                     setIsLoading(false);
                     return;
                 }
@@ -98,11 +103,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             }
             await AsyncStorage.setItem('token', token);
             await AsyncStorage.setItem('user', JSON.stringify(userData));
-
-            // Show success alert only once on successful login transition
-            if (Platform.OS === 'web' && !isLoggedIn) {
-                window.alert('로그인에 성공했습니다!');
-            }
 
             setUser(userData);
             setIsLoggedIn(true);
