@@ -98,8 +98,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             }
             await AsyncStorage.setItem('token', token);
             await AsyncStorage.setItem('user', JSON.stringify(userData));
+
+            // Show success alert only once on successful login transition
+            if (Platform.OS === 'web' && !isLoggedIn) {
+                window.alert('로그인에 성공했습니다!');
+            }
+
             setUser(userData);
             setIsLoggedIn(true);
+            console.log('User logged in successfully');
         } catch (e) {
             console.error(e);
         }

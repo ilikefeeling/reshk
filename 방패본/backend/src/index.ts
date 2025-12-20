@@ -18,14 +18,18 @@ import { errorHandler } from './middlewares/errorHandler';
 
 import path from 'path';
 
-// Load environment variables
-const envPath = path.resolve(__dirname, '../custom.env');
-const dotenvResult = dotenv.config({ path: envPath });
+// Load environment variables (Only if not on Vercel)
+if (process.env.VERCEL !== '1') {
+    const envPath = path.resolve(__dirname, '../custom.env');
+    const dotenvResult = dotenv.config({ path: envPath });
 
-if (dotenvResult.error) {
-    console.warn(`⚠️ Warning: Could not find custom.env at ${envPath}. Falling back to default .env or system env.`);
+    if (dotenvResult.error) {
+        console.warn(`⚠️ Warning: Could not find custom.env at ${envPath}. Falling back to default .env or system env.`);
+    } else {
+        console.log(`✅ Loaded environment from: ${envPath}`);
+    }
 } else {
-    console.log(`✅ Loaded environment from: ${envPath}`);
+    console.log('🚀 Running on Vercel, using system environment variables.');
 }
 
 const app = express();

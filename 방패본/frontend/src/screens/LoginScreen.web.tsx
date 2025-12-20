@@ -13,10 +13,6 @@ export default function LoginScreen({ navigation, route }: any) {
 
     useEffect(() => {
         if (isLoggedIn) {
-            // Show success modal/alert
-            if (typeof window !== 'undefined') {
-                window.alert('로그인에 성공했습니다!');
-            }
 
             const target = redirectTarget || 'Home';
             const tabScreens = ['Home', 'ChatList', 'Profile'];
