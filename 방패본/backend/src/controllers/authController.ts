@@ -149,14 +149,14 @@ export const kakaoCallback = async (req: Request, res: Response) => {
     try {
         // Reuse the logic from kakaoLogin but for a GET request/redirect
         const { code, state } = req.query;
-        if (!code) return res.redirect('https://www.lookingall.com/login?error=no_code');
+        if (!code) return res.redirect(`${state || '/'}login?error=no_code`);
 
         const hostname = req.get('host') || '';
         const protocol = (req.headers['x-forwarded-proto'] as string) || req.protocol || 'http';
         const origin = `${protocol}://${hostname}`;
 
         // Use state to determine where to redirect back after login
-        let frontendOrigin = state ? decodeURIComponent(state as string) : 'https://www.lookingall.com';
+        let frontendOrigin = state ? decodeURIComponent(state as string) : `${protocol}://${hostname}`;
 
         // redirectUri MUST match what was sent during the code request
         const redirectUri = `${origin}/api/auth/kakao/callback`;
@@ -226,7 +226,9 @@ export const kakaoCallback = async (req: Request, res: Response) => {
         res.redirect(finalRedirectUrl);
     } catch (error: any) {
         console.error('Kakao Callback Error:', error.response?.data || error.message);
-        res.redirect('https://www.lookingall.com/login?error=callback_failed');
+        const { state } = req.query;
+        const frontendOrigin = state ? decodeURIComponent(state as string) : '/';
+        res.redirect(`${frontendOrigin.replace(/\/+$/, '')}/login?error=callback_failed`);
     }
 };
 

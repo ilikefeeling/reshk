@@ -7,7 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 const IS_PROD = !__DEV__ || Platform.OS === 'web' && !window.location.hostname.includes('localhost');
 const BASE_URL = IS_PROD
-    ? 'https://www.lookingall.com/api'
+    ? '/api'
     : 'http://192.168.1.112:3002/api';
 
 console.log('Current API BASE_URL:', BASE_URL);

@@ -20,10 +20,10 @@
     },
     {
       "source": "/uploads/(.*)",
-      "destination": "/uploads/$1"
+      "destination": "backend/src/index.ts"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!api|uploads).*)",
       "destination": "frontend/dist/$1"
     },
     {
