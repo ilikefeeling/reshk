@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, Image, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, Image, ScrollView, Alert, ActivityIndicator, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -18,7 +18,6 @@ export default function ProfileScreen({ navigation }: any) {
             setUser(response.data);
         } catch (error) {
             console.error(error);
-            // If unauthorized, maybe redirect to login
         } finally {
             setLoading(false);
         }
@@ -55,142 +54,323 @@ export default function ProfileScreen({ navigation }: any) {
 
     if (loading) {
         return (
-            <SafeAreaView className="flex-1 bg-white justify-center items-center">
+            <SafeAreaView style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color="#2563eb" />
             </SafeAreaView>
         );
     }
 
     return (
-        <SafeAreaView className="flex-1 bg-gray-50">
-            <ScrollView>
+        <SafeAreaView style={[styles.safeArea, { backgroundColor: '#f9fafb' }]}>
+            <ScrollView style={styles.scrollView}>
                 {/* Header Profile Section */}
-                <View className="bg-white p-6 items-center border-b border-gray-100">
-                    <View className="w-24 h-24 bg-gray-200 rounded-full mb-4 items-center justify-center overflow-hidden">
+                <View style={styles.profileHeader}>
+                    <View style={styles.avatarContainer}>
                         {user?.profileImage ? (
-                            <Image source={{ uri: user.profileImage }} className="w-full h-full" />
+                            <Image source={{ uri: user.profileImage }} style={styles.profileImage} />
                         ) : (
-                            <Ionicons name="person" size={48} color="gray" />
+                            <Ionicons name="person" size={48} color="#9ca3af" />
                         )}
-                        <TouchableOpacity className="absolute bottom-0 right-0 bg-blue-600 p-2 rounded-full border-2 border-white">
+                        <TouchableOpacity style={styles.cameraButton}>
                             <Ionicons name="camera" size={16} color="white" />
                         </TouchableOpacity>
                     </View>
-                    <Text className="text-2xl font-bold text-gray-900">{user?.name || 'User'}</Text>
-                    <Text className="text-gray-500">{user?.email}</Text>
+                    <Text style={styles.profileName}>{user?.name || 'User'}</Text>
+                    <Text style={styles.profileEmail}>{user?.email}</Text>
                 </View>
 
                 {/* Stats Section */}
-                <View className="flex-row bg-white mt-4 py-4 justify-around border-y border-gray-100">
-                    <View className="items-center">
-                        <Text className="text-xl font-bold text-blue-600">{user?.stats?.requests || 0}</Text>
-                        <Text className="text-gray-500 text-sm">Requests</Text>
+                <View style={styles.statsSection}>
+                    <View style={styles.statItem}>
+                        <Text style={styles.statValue}>{user?.stats?.requests || 0}</Text>
+                        <Text style={styles.statLabel}>Requests</Text>
                     </View>
-                    <View className="w-[1px] bg-gray-200" />
-                    <View className="items-center">
-                        <Text className="text-xl font-bold text-blue-600">{user?.stats?.reports || 0}</Text>
-                        <Text className="text-gray-500 text-sm">Tasks Done</Text>
+                    <View style={styles.statDivider} />
+                    <View style={styles.statItem}>
+                        <Text style={styles.statValue}>{user?.stats?.reports || 0}</Text>
+                        <Text style={styles.statLabel}>Tasks Done</Text>
                     </View>
-                    <View className="w-[1px] bg-gray-200" />
-                    <View className="items-center">
-                        <View className="flex-row items-center">
+                    <View style={styles.statDivider} />
+                    <View style={styles.statItem}>
+                        <View style={styles.ratingRow}>
                             <Ionicons name="star" size={16} color="#f59e0b" style={{ marginRight: 4 }} />
-                            <Text className="text-xl font-bold text-blue-600">{user?.rating?.toFixed(1) || '0.0'}</Text>
+                            <Text style={styles.statValue}>{user?.rating?.toFixed(1) || '0.0'}</Text>
                         </View>
-                        <Text className="text-gray-500 text-sm">({user?.reviewCount || 0} reviews)</Text>
+                        <Text style={styles.statLabel}>({user?.reviewCount || 0} reviews)</Text>
                     </View>
                 </View>
 
                 {/* Verification Section */}
                 {user?.identityStatus !== 'VERIFIED' && (
-                    <View className="mx-4 mt-6 p-4 bg-blue-50 rounded-2xl border border-blue-100 items-center">
-                        <View className="flex-row items-center mb-2">
+                    <View style={styles.verifyBanner}>
+                        <View style={styles.verifyHeader}>
                             <Ionicons name="shield-outline" size={24} color="#2563eb" />
-                            <Text className="ml-2 text-lg font-bold text-blue-800">Verify Your Identity</Text>
+                            <Text style={styles.verifyTitle}>Verify Your Identity</Text>
                         </View>
-                        <Text className="text-blue-600 text-center mb-4">
+                        <Text style={styles.verifyText}>
                             Verified users get more trust and higher priority in the community.
                         </Text>
                         <TouchableOpacity
                             onPress={() => navigation.navigate('Verification')}
-                            className="bg-blue-600 px-8 py-3 rounded-full shadow-sm"
+                            style={styles.verifyButton}
                         >
-                            <Text className="text-white font-bold">Start Verification</Text>
+                            <Text style={styles.verifyButtonText}>Start Verification</Text>
                         </TouchableOpacity>
                     </View>
                 )}
 
                 {/* Menu Items */}
-                <View className="mt-6 bg-white border-y border-gray-100">
-                    <TouchableOpacity className="flex-row items-center p-4 border-b border-gray-50">
-                        <View className="w-10 h-10 bg-blue-50 rounded-full items-center justify-center mr-4">
+                <View style={styles.menuSection}>
+                    <TouchableOpacity style={styles.menuItem}>
+                        <View style={[styles.menuIconWrapper, { backgroundColor: '#eff6ff' }]}>
                             <Ionicons name="person-outline" size={20} color="#2563eb" />
                         </View>
-                        <View className="flex-1">
-                            <Text className="text-lg text-gray-800">Edit Profile</Text>
-                            <View className="flex-row items-center">
-                                <Text className={`text-xs ${user?.identityStatus === 'VERIFIED' ? 'text-green-600' : 'text-amber-600'}`}>
+                        <View style={styles.menuTextWrapper}>
+                            <Text style={styles.menuItemText}>Edit Profile</Text>
+                            <View style={styles.statusRow}>
+                                <Text style={[styles.menuSubText, user?.identityStatus === 'VERIFIED' ? styles.statusVerified : styles.statusUnverified]}>
                                     {user?.identityStatus === 'VERIFIED' ? 'Identity Verified' : 'Unverified Account'}
                                 </Text>
                                 {user?.identityStatus === 'VERIFIED' && <Ionicons name="checkmark-circle" size={12} color="#16a34a" style={{ marginLeft: 4 }} />}
                             </View>
                         </View>
-                        <Ionicons name="chevron-forward" size={20} color="gray" />
+                        <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
                     </TouchableOpacity>
 
-                    <TouchableOpacity className="flex-row items-center p-4 border-b border-gray-50">
-                        <View className="w-10 h-10 bg-green-50 rounded-full items-center justify-center mr-4">
+                    <TouchableOpacity style={styles.menuItem}>
+                        <View style={[styles.menuIconWrapper, { backgroundColor: '#f0fdf4' }]}>
                             <Ionicons name="card-outline" size={20} color="#16a34a" />
                         </View>
-                        <Text className="flex-1 text-lg text-gray-800">Payment History</Text>
-                        <Ionicons name="chevron-forward" size={20} color="gray" />
+                        <Text style={styles.menuItemTextFull}>Payment History</Text>
+                        <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
                     </TouchableOpacity>
 
                     {user?.role === 'ADMIN' && (
                         <TouchableOpacity
                             onPress={() => navigation.navigate('AdminDashboard')}
-                            className="flex-row items-center p-4 border-b border-gray-50"
+                            style={styles.menuItem}
                         >
-                            <View className="w-10 h-10 bg-amber-50 rounded-full items-center justify-center mr-4">
+                            <View style={[styles.menuIconWrapper, { backgroundColor: '#fffbeb' }]}>
                                 <Ionicons name="shield-checkmark-outline" size={20} color="#d97706" />
                             </View>
-                            <Text className="flex-1 text-lg text-gray-800 font-bold">Manager Dashboard</Text>
-                            <Ionicons name="chevron-forward" size={20} color="gray" />
+                            <Text style={[styles.menuItemTextFull, { fontWeight: 'bold' }]}>Manager Dashboard</Text>
+                            <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
                         </TouchableOpacity>
                     )}
 
                     <TouchableOpacity
                         onPress={() => navigation.navigate('BlockedUsers')}
-                        className="flex-row items-center p-4 border-b border-gray-50"
+                        style={styles.menuItem}
                     >
-                        <View className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center mr-4">
+                        <View style={[styles.menuIconWrapper, { backgroundColor: '#f9fafb' }]}>
                             <Ionicons name="shield-outline" size={20} color="#4b5563" />
                         </View>
-                        <Text className="flex-1 text-lg text-gray-800">Blocked Users</Text>
-                        <Ionicons name="chevron-forward" size={20} color="gray" />
+                        <Text style={styles.menuItemTextFull}>Blocked Users</Text>
+                        <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
                     </TouchableOpacity>
 
-                    <TouchableOpacity className="flex-row items-center p-4 border-b border-gray-50">
-                        <View className="w-10 h-10 bg-purple-50 rounded-full items-center justify-center mr-4">
+                    <TouchableOpacity style={styles.menuItem}>
+                        <View style={[styles.menuIconWrapper, { backgroundColor: '#faf5ff' }]}>
                             <Ionicons name="settings-outline" size={20} color="#9333ea" />
                         </View>
-                        <Text className="flex-1 text-lg text-gray-800">Settings</Text>
-                        <Ionicons name="chevron-forward" size={20} color="gray" />
+                        <Text style={styles.menuItemTextFull}>Settings</Text>
+                        <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
                     </TouchableOpacity>
                 </View>
 
-                <View className="mt-6 bg-white border-y border-gray-100 mb-10">
+                <View style={[styles.menuSection, { marginBottom: 40 }]}>
                     <TouchableOpacity
-                        className="flex-row items-center p-4"
+                        style={[styles.menuItem, { borderBottomWidth: 0 }]}
                         onPress={handleLogout}
                     >
-                        <View className="w-10 h-10 bg-red-50 rounded-full items-center justify-center mr-4">
+                        <View style={[styles.menuIconWrapper, { backgroundColor: '#fef2f2' }]}>
                             <Ionicons name="log-out-outline" size={20} color="#dc2626" />
                         </View>
-                        <Text className="flex-1 text-lg text-red-600">Log Out</Text>
+                        <Text style={[styles.menuItemTextFull, { color: '#dc2626' }]}>Log Out</Text>
                     </TouchableOpacity>
                 </View>
             </ScrollView>
         </SafeAreaView>
     );
 }
+
+const styles = StyleSheet.create({
+    safeArea: {
+        flex: 1,
+    },
+    loadingContainer: {
+        flex: 1,
+        backgroundColor: '#ffffff',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    scrollView: {
+        flex: 1,
+    },
+    profileHeader: {
+        backgroundColor: '#ffffff',
+        padding: 24,
+        alignItems: 'center',
+        borderBottomWidth: 1,
+        borderBottomColor: '#f3f4f6',
+    },
+    avatarContainer: {
+        width: 96,
+        height: 96,
+        backgroundColor: '#f3f4f6',
+        borderRadius: 48,
+        marginBottom: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+        position: 'relative',
+    },
+    profileImage: {
+        width: '100%',
+        height: '100%',
+    },
+    cameraButton: {
+        position: 'absolute',
+        bottom: 0,
+        right: 0,
+        backgroundColor: '#2563eb',
+        padding: 8,
+        borderRadius: 999,
+        borderWidth: 2,
+        borderColor: '#ffffff',
+    },
+    profileName: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#111827',
+    },
+    profileEmail: {
+        color: '#6b7280',
+        marginTop: 4,
+    },
+    statsSection: {
+        flexDirection: 'row',
+        backgroundColor: '#ffffff',
+        marginTop: 16,
+        paddingVertical: 16,
+        justifyContent: 'space-around',
+        alignItems: 'center',
+        borderTopWidth: 1,
+        borderBottomWidth: 1,
+        borderTopColor: '#f3f4f6',
+        borderBottomColor: '#f3f4f6',
+    },
+    statItem: {
+        alignItems: 'center',
+        flex: 1,
+    },
+    statValue: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#2563eb',
+    },
+    statLabel: {
+        fontSize: 12,
+        color: '#6b7280',
+        marginTop: 2,
+    },
+    statDivider: {
+        width: 1,
+        height: 24,
+        backgroundColor: '#e5e7eb',
+    },
+    ratingRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    verifyBanner: {
+        marginHorizontal: 16,
+        marginTop: 24,
+        padding: 16,
+        backgroundColor: '#eff6ff',
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: '#dbeafe',
+        alignItems: 'center',
+    },
+    verifyHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    verifyTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#1e40af',
+        marginLeft: 8,
+    },
+    verifyText: {
+        color: '#3b82f6',
+        textAlign: 'center',
+        marginBottom: 16,
+        lineHeight: 20,
+    },
+    verifyButton: {
+        backgroundColor: '#2563eb',
+        paddingVertical: 12,
+        paddingHorizontal: 32,
+        borderRadius: 999,
+        shadowColor: '#2563eb',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+    },
+    verifyButtonText: {
+        color: '#ffffff',
+        fontWeight: 'bold',
+    },
+    menuSection: {
+        marginTop: 24,
+        backgroundColor: '#ffffff',
+        borderTopWidth: 1,
+        borderBottomWidth: 1,
+        borderTopColor: '#f3f4f6',
+        borderBottomColor: '#f3f4f6',
+    },
+    menuItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f9fafb',
+    },
+    menuIconWrapper: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 16,
+    },
+    menuTextWrapper: {
+        flex: 1,
+    },
+    menuItemText: {
+        fontSize: 18,
+        color: '#1f2937',
+    },
+    menuItemTextFull: {
+        flex: 1,
+        fontSize: 18,
+        color: '#1f2937',
+    },
+    statusRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 2,
+    },
+    menuSubText: {
+        fontSize: 12,
+    },
+    statusVerified: {
+        color: '#16a34a',
+    },
+    statusUnverified: {
+        color: '#d97706',
+    },
+});

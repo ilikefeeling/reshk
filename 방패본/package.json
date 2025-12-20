@@ -7,7 +7,7 @@
     "build": "rm -rf frontend/dist && cd frontend && npm install && npx expo export --platform web && cd ../backend && npm install && npx prisma generate"
   },
   "dependencies": {
-    "expo": "^54.0.29",
+    "expo": "~54.0.30",
     "react-native-safe-area-context": "^5.6.2",
     "socket.io-client": "^4.8.1"
   },

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import IMP from 'iamport-react-native';
 import api from '../utils/api';
 
@@ -45,8 +45,17 @@ export default function VerificationScreen({ navigation }: any) {
 
 function LoadingView() {
     return (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#2563eb" />
         </View>
     );
 }
+
+const styles = StyleSheet.create({
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#ffffff',
+    },
+});

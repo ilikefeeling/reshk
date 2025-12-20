@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../utils/api';
@@ -45,56 +45,170 @@ export default function ReportUserScreen({ route, navigation }: any) {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-white">
-            <View className="flex-row items-center p-4 border-b border-gray-100">
-                <TouchableOpacity onPress={() => navigation.goBack()}>
+        <SafeAreaView style={styles.safeArea}>
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeButton}>
                     <Ionicons name="close" size={24} color="black" />
                 </TouchableOpacity>
-                <Text className="flex-1 text-center text-lg font-bold">Report User</Text>
-                <View className="w-6" />
+                <Text style={styles.headerTitle}>Report User</Text>
+                <View style={styles.headerRightPlaceholder} />
             </View>
 
-            <ScrollView className="p-6">
-                <Text className="text-xl font-bold text-gray-900 mb-2">Reporting {targetUserName}</Text>
-                <Text className="text-gray-500 mb-6">Why are you reporting this user?</Text>
+            <ScrollView contentContainerStyle={styles.scrollContent}>
+                <Text style={styles.title}>Reporting {targetUserName}</Text>
+                <Text style={styles.subtitle}>Why are you reporting this user?</Text>
 
-                {REASONS.map((reason) => (
-                    <TouchableOpacity
-                        key={reason.id}
-                        onPress={() => setSelectedReason(reason.id)}
-                        className={`flex-row items-center p-4 mb-3 rounded-xl border ${selectedReason === reason.id ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-100'
-                            }`}
-                    >
-                        <Ionicons
-                            name={selectedReason === reason.id ? "radio-button-on" : "radio-button-off"}
-                            size={20}
-                            color={selectedReason === reason.id ? "#dc2626" : "#9ca3af"}
-                        />
-                        <Text className={`ml-3 text-base ${selectedReason === reason.id ? 'text-red-700 font-semibold' : 'text-gray-700'}`}>
-                            {reason.label}
-                        </Text>
-                    </TouchableOpacity>
-                ))}
+                {REASONS.map((reason) => {
+                    const isSelected = selectedReason === reason.id;
+                    return (
+                        <TouchableOpacity
+                            key={reason.id}
+                            onPress={() => setSelectedReason(reason.id)}
+                            style={[
+                                styles.reasonCard,
+                                isSelected ? styles.reasonCardSelected : styles.reasonCardUnselected
+                            ]}
+                        >
+                            <Ionicons
+                                name={isSelected ? "radio-button-on" : "radio-button-off"}
+                                size={20}
+                                color={isSelected ? "#dc2626" : "#9ca3af"}
+                            />
+                            <Text style={[
+                                styles.reasonLabel,
+                                isSelected ? styles.reasonLabelSelected : styles.reasonLabelUnselected
+                            ]}>
+                                {reason.label}
+                            </Text>
+                        </TouchableOpacity>
+                    );
+                })}
 
-                <Text className="text-lg font-semibold text-gray-800 mt-6 mb-2">Additional Details</Text>
+                <Text style={styles.label}>Additional Details</Text>
                 <TextInput
-                    className="bg-gray-50 border border-gray-100 rounded-xl p-4 min-h-[120] text-gray-800"
+                    style={styles.textInput}
                     placeholder="Provide specific details about the incident..."
                     multiline
                     textAlignVertical="top"
                     value={details}
                     onChangeText={setDetails}
+                    placeholderTextColor="#94a3b8"
                 />
 
                 <TouchableOpacity
-                    className={`mt-10 py-4 rounded-xl items-center ${submitting ? 'bg-gray-400' : 'bg-red-600'}`}
+                    style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
                     onPress={handleReport}
                     disabled={submitting}
                 >
-                    <Text className="text-white font-bold text-lg">Submit Report</Text>
+                    <Text style={styles.submitButtonText}>Submit Report</Text>
                 </TouchableOpacity>
-                <View className="h-20" />
+                <View style={{ height: 40 }} />
             </ScrollView>
         </SafeAreaView>
     );
 }
+
+const styles = StyleSheet.create({
+    safeArea: {
+        flex: 1,
+        backgroundColor: '#ffffff',
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f3f4f6',
+        backgroundColor: '#ffffff',
+    },
+    closeButton: {
+        padding: 4,
+    },
+    headerTitle: {
+        flex: 1,
+        textAlign: 'center',
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#111827',
+    },
+    headerRightPlaceholder: {
+        width: 32,
+    },
+    scrollContent: {
+        padding: 24,
+    },
+    title: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        color: '#111827',
+        marginBottom: 8,
+    },
+    subtitle: {
+        fontSize: 16,
+        color: '#6b7280',
+        marginBottom: 24,
+    },
+    reasonCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        marginBottom: 12,
+        borderRadius: 12,
+        borderWidth: 1,
+    },
+    reasonCardSelected: {
+        backgroundColor: '#fef2f2',
+        borderColor: '#fecaca',
+    },
+    reasonCardUnselected: {
+        backgroundColor: '#f9fafb',
+        borderColor: '#f1f5f9',
+    },
+    reasonLabel: {
+        marginLeft: 12,
+        fontSize: 16,
+    },
+    reasonLabelSelected: {
+        color: '#991b1b',
+        fontWeight: '600',
+    },
+    reasonLabelUnselected: {
+        color: '#374151',
+    },
+    label: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#1f2937',
+        marginTop: 24,
+        marginBottom: 12,
+    },
+    textInput: {
+        backgroundColor: '#f9fafb',
+        borderWidth: 1,
+        borderColor: '#f1f5f9',
+        borderRadius: 16,
+        padding: 16,
+        minHeight: 140,
+        fontSize: 16,
+        color: '#111827',
+    },
+    submitButton: {
+        marginTop: 40,
+        backgroundColor: '#dc2626',
+        paddingVertical: 16,
+        borderRadius: 12,
+        alignItems: 'center',
+        shadowColor: '#dc2626',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+    },
+    submitButtonDisabled: {
+        backgroundColor: '#94a3b8',
+    },
+    submitButtonText: {
+        color: '#ffffff',
+        fontWeight: 'bold',
+        fontSize: 18,
+    },
+});

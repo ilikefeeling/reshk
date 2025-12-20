@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, TextInput, Alert, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, Alert, Platform, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
@@ -32,9 +32,7 @@ export default function SignupScreen({ navigation }: any) {
 
         try {
             setLoading(true);
-            console.log('Sending Signup Request:', { email, name, phone });
             const response = await api.post('/auth/register', { email, password, name, phone });
-            console.log('Signup API Success:', response.data);
 
             if (response.data.token) {
                 const successMsg = `${name}님, 회원가입이 완료되었습니다.`;
@@ -57,11 +55,6 @@ export default function SignupScreen({ navigation }: any) {
                 }
             }
         } catch (error: any) {
-            console.log('Signup Frontend Error Object:', error);
-            if (error.response) {
-                console.log('Signup Error Response Data:', error.response.data);
-                console.log('Signup Error Response Status:', error.response.status);
-            }
             const message = error.response?.data?.message || '회원가입 중 오류가 발생했습니다. 네트워크 연결을 확인해 주세요.';
             setErrorMsg(message);
         } finally {
@@ -70,62 +63,128 @@ export default function SignupScreen({ navigation }: any) {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-white justify-center px-6">
-            <View className="items-center mb-10">
-                <Text className="text-3xl font-bold text-blue-600">Join Looking</Text>
-                <Text className="text-gray-500 mt-2">Create an account to start.</Text>
+        <SafeAreaView style={styles.container}>
+            <View style={styles.header}>
+                <Text style={styles.title}>Join Looking</Text>
+                <Text style={styles.subtitle}>Create an account to start.</Text>
             </View>
 
-            <View className="space-y-4">
+            <View style={styles.form}>
                 {errorMsg ? (
-                    <Text className="text-red-500 text-sm mb-2 text-center">{errorMsg}</Text>
+                    <Text style={styles.errorText}>{errorMsg}</Text>
                 ) : null}
                 <TextInput
                     placeholder="Full Name"
                     value={name}
                     onChangeText={setName}
-                    className="w-full bg-gray-100 p-4 rounded-lg"
+                    style={styles.input}
+                    placeholderTextColor="#9ca3af"
                 />
                 <TextInput
                     placeholder="Email"
                     value={email}
                     onChangeText={setEmail}
-                    className="w-full bg-gray-100 p-4 rounded-lg"
+                    style={styles.input}
                     autoCapitalize="none"
                     keyboardType="email-address"
+                    placeholderTextColor="#9ca3af"
                 />
                 <TextInput
                     placeholder="Phone Number (Optional)"
                     value={phone}
                     onChangeText={setPhone}
-                    className="w-full bg-gray-100 p-4 rounded-lg"
+                    style={styles.input}
                     keyboardType="phone-pad"
+                    placeholderTextColor="#9ca3af"
                 />
                 <TextInput
                     placeholder="Password"
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry
-                    className="w-full bg-gray-100 p-4 rounded-lg"
+                    style={styles.input}
+                    placeholderTextColor="#9ca3af"
                 />
 
                 <TouchableOpacity
-                    className={`w-full bg-blue-600 p-4 rounded-lg items-center ${loading ? 'opacity-50' : ''}`}
+                    style={[styles.signupButton, loading && styles.disabledButton]}
                     onPress={handleSignup}
                     disabled={loading}
                 >
-                    <Text className="text-white font-bold text-lg">
+                    <Text style={styles.signupButtonText}>
                         {loading ? '가입 중...' : '회원가입'}
                     </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                    className="w-full p-4 items-center"
+                    style={styles.loginLink}
                     onPress={() => navigation.navigate('Login')}
                 >
-                    <Text className="text-blue-600">Already have an account? Log In</Text>
+                    <Text style={styles.loginLinkText}>Already have an account? Log In</Text>
                 </TouchableOpacity>
             </View>
         </SafeAreaView>
     );
 }
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#ffffff',
+        justifyContent: 'center',
+        paddingHorizontal: 24,
+    },
+    header: {
+        marginBottom: 40,
+        alignItems: 'center',
+    },
+    title: {
+        fontSize: 30, // 3xl
+        fontWeight: 'bold',
+        color: '#2563eb', // blue-600
+    },
+    subtitle: {
+        color: '#6b7280', // gray-500
+        marginTop: 8,
+    },
+    form: {
+        width: '100%',
+    },
+    errorText: {
+        color: '#ef4444', // red-500
+        fontSize: 14,
+        marginBottom: 8,
+        textAlign: 'center',
+    },
+    input: {
+        backgroundColor: '#f3f4f6', // gray-100
+        padding: 16,
+        borderRadius: 8,
+        marginBottom: 16,
+        fontSize: 16,
+        color: '#1f2937',
+    },
+    signupButton: {
+        backgroundColor: '#2563eb', // blue-600
+        padding: 16,
+        borderRadius: 8,
+        alignItems: 'center',
+        marginTop: 8,
+    },
+    signupButtonText: {
+        color: '#ffffff',
+        fontWeight: 'bold',
+        fontSize: 18,
+    },
+    disabledButton: {
+        opacity: 0.5,
+    },
+    loginLink: {
+        padding: 16,
+        alignItems: 'center',
+    },
+    loginLinkText: {
+        color: '#2563eb', // blue-600
+        fontSize: 16,
+    },
+});

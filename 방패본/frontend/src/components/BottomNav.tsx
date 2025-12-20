@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,15 +14,15 @@ export default function BottomNav({ state, descriptors, navigation: tabNavigatio
 
     const handleProtectedAction = async (screen: string) => {
         const token = await AsyncStorage.getItem('token');
-        if (isLoggedIn || token) {
-            // Check if the screen is part of the tab state
-            const tabIndex = state.routes.findIndex((r: any) => r.name === screen);
-            if (tabIndex !== -1) {
-                tabNavigation.navigate(screen);
+        if (isLoggedIn || (token && token !== 'null' && token !== 'undefined')) {
+            const currentRoute = navigation.getState().routes[navigation.getState().index];
+            if (currentRoute.name === 'Main') {
+                navigation.navigate('Main', { screen });
             } else {
                 navigation.navigate(screen);
             }
         } else {
+            console.log(`[AUTH] BottomNav: Unauthorized access attempt to ${screen}.`);
             navigation.navigate('Login', { redirect: screen });
         }
     };
@@ -37,10 +37,10 @@ export default function BottomNav({ state, descriptors, navigation: tabNavigatio
     };
 
     return (
-        <View className="absolute bottom-0 left-0 right-0 h-16 bg-white border-t border-gray-100 flex-row justify-around items-center z-50 pb-2 shadow-lg">
+        <View style={styles.container}>
             {/* Home */}
             <TouchableOpacity
-                className="items-center justify-center w-16 h-full"
+                style={styles.tabItem}
                 onPress={() => handleTabPress('Home')}
             >
                 <Ionicons
@@ -48,12 +48,12 @@ export default function BottomNav({ state, descriptors, navigation: tabNavigatio
                     size={24}
                     color={state.index === 0 ? "#6366f1" : "#9ca3af"}
                 />
-                <Text className={`text-[10px] mt-1 font-bold ${state.index === 0 ? 'text-indigo-600' : 'text-gray-400'}`}>홈</Text>
+                <Text style={[styles.tabText, state.index === 0 && styles.activeTabText]}>홈</Text>
             </TouchableOpacity>
 
             {/* Chat */}
             <TouchableOpacity
-                className="items-center justify-center w-16 h-full"
+                style={styles.tabItem}
                 onPress={() => handleProtectedAction('ChatList')}
             >
                 <Ionicons
@@ -61,12 +61,12 @@ export default function BottomNav({ state, descriptors, navigation: tabNavigatio
                     size={24}
                     color={state.index === 1 ? "#6366f1" : "#9ca3af"}
                 />
-                <Text className={`text-[10px] mt-1 font-bold ${state.index === 1 ? 'text-indigo-600' : 'text-gray-400'}`}>채팅</Text>
+                <Text style={[styles.tabText, state.index === 1 && styles.activeTabText]}>채팅</Text>
             </TouchableOpacity>
 
             {/* Admin (Always visible for verification) / Report (Default) */}
             <TouchableOpacity
-                className="items-center justify-center w-14 h-14 bg-indigo-600 rounded-2xl -mt-8 border-4 border-white shadow-xl"
+                style={styles.floatingButton}
                 onPress={() => navigation.navigate('AdminDashboard')}
             >
                 <Ionicons name="shield-checkmark" size={24} color="white" />
@@ -74,16 +74,16 @@ export default function BottomNav({ state, descriptors, navigation: tabNavigatio
 
             {/* Request */}
             <TouchableOpacity
-                className="items-center justify-center w-16 h-full"
+                style={styles.tabItem}
                 onPress={() => handleProtectedAction('CreateRequest')}
             >
                 <Ionicons name="paper-plane-outline" size={24} color="#9ca3af" />
-                <Text className="text-[10px] mt-1 font-bold text-gray-400">의뢰</Text>
+                <Text style={styles.tabText}>의뢰</Text>
             </TouchableOpacity>
 
             {/* My */}
             <TouchableOpacity
-                className="items-center justify-center w-16 h-full"
+                style={styles.tabItem}
                 onPress={() => handleProtectedAction('Profile')}
             >
                 <Ionicons
@@ -91,8 +91,57 @@ export default function BottomNav({ state, descriptors, navigation: tabNavigatio
                     size={24}
                     color={state.index === 2 ? "#6366f1" : "#9ca3af"}
                 />
-                <Text className={`text-[10px] mt-1 font-bold ${state.index === 2 ? 'text-indigo-600' : 'text-gray-400'}`}>내정보</Text>
+                <Text style={[styles.tabText, state.index === 2 && styles.activeTabText]}>내정보</Text>
             </TouchableOpacity>
         </View>
     );
 }
+
+const styles = StyleSheet.create({
+    container: {
+        height: 64,
+        backgroundColor: '#ffffff',
+        borderTopWidth: 1,
+        borderTopColor: '#f3f4f6',
+        flexDirection: 'row',
+        justifyContent: 'space-around', // Changed from 'around' to 'space-around' for valid flexbox property
+        alignItems: 'center',
+        paddingBottom: 8,
+        elevation: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+    },
+    tabItem: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 64,
+        height: '100%',
+    },
+    tabText: {
+        fontSize: 10,
+        marginTop: 4,
+        fontWeight: 'bold',
+        color: '#9ca3af',
+    },
+    activeTabText: {
+        color: '#6366f1',
+    },
+    floatingButton: {
+        width: 56,
+        height: 56,
+        backgroundColor: '#4f46e5', // Corresponds to indigo-600
+        borderRadius: 20,
+        marginTop: -32,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 4,
+        borderColor: '#ffffff',
+        elevation: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 6,
+    },
+});

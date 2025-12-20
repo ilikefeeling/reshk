@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Alert } from 'react-native';
+import { View, Text, Alert, StyleSheet } from 'react-native';
 import IMP from 'iamport-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import api from '../utils/api';
@@ -20,6 +20,7 @@ export default function PaymentScreen({ route, navigation }: any) {
         buyer_tel: '010-1234-5678',
         buyer_email: 'example@example.com',
         app_scheme: 'lookingapp',
+        escrow: false, // Add missing required property
     };
 
     const callback = async (response: any) => {
@@ -49,13 +50,35 @@ export default function PaymentScreen({ route, navigation }: any) {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-white">
+        <SafeAreaView style={styles.safeArea}>
             <IMP.Payment
                 userCode={userCode}
                 data={data}
                 callback={callback}
-                loading={<View className="flex-1 justify-center items-center"><Text>Loading Payment...</Text></View>}
+                loading={
+                    <View style={styles.loadingContainer}>
+                        <Text style={styles.loadingText}>Loading Payment...</Text>
+                    </View>
+                }
             />
         </SafeAreaView>
     );
 }
+
+const styles = StyleSheet.create({
+    safeArea: {
+        flex: 1,
+        backgroundColor: '#ffffff',
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#ffffff',
+    },
+    loadingText: {
+        marginTop: 10,
+        color: '#6b7280',
+        fontSize: 16,
+    },
+});

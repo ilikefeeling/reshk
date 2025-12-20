@@ -45,7 +45,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     const parsedUser = JSON.parse(decodeURIComponent(queryUser));
 
                     // Show alert and then login
-                    window.alert('로그인에 성공했습니다!');
                     await login(queryToken, parsedUser);
 
                     setIsLoading(false);

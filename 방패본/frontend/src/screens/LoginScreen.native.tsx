@@ -10,7 +10,18 @@ if (Platform.OS !== 'web') {
     WebView = require('react-native-webview').WebView;
 }
 
-const KAKAO_AUTH_URL = `https://kauth.kakao.com/oauth/authorize?client_id=50fabbcf9a9d8375b8655c807a3d3f0f&redirect_uri=https://www.lookingall.com/api/auth/kakao/callback&response_type=code`;
+const getKakaoAuthUrl = () => {
+    // Dynamically determine origin from api.defaults.baseURL
+    // Ensure we don't have trailing slashes or duplicate /api
+    const apiURL = (api.defaults.baseURL || 'http://localhost:3002/api').replace(/\/+$/, '');
+    const origin = apiURL.endsWith('/api') ? apiURL.slice(0, -4) : apiURL;
+    const redirectUri = `${origin}/api/auth/kakao/callback`;
+
+    // Add state to track the origin for the backend if needed
+    const state = encodeURIComponent(origin);
+
+    return `https://kauth.kakao.com/oauth/authorize?client_id=2bc4c5e9fef481cadb721dabddaf85b6&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&state=${state}`;
+};
 
 export default function LoginScreen({ navigation, route }: any) {
     const { login, isLoggedIn } = useAuth();
@@ -44,7 +55,7 @@ export default function LoginScreen({ navigation, route }: any) {
     const handleKakaoLogin = () => {
         if (Platform.OS === 'web') {
             // For Web, direct redirect
-            window.location.href = KAKAO_AUTH_URL;
+            window.location.href = getKakaoAuthUrl();
         } else {
             // For Native, show WebView Modal
             setShowKakao(true);
@@ -113,7 +124,7 @@ export default function LoginScreen({ navigation, route }: any) {
                             <Text style={styles.closeButtonText}>닫기</Text>
                         </TouchableOpacity>
                         <WebView
-                            source={{ uri: KAKAO_AUTH_URL }}
+                            source={{ uri: getKakaoAuthUrl() }}
                             onNavigationStateChange={onNavigationStateChange}
                             javaScriptEnabled={true}
                         />

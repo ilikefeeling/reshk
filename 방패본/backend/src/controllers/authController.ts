@@ -72,8 +72,12 @@ export const kakaoLogin = async (req: Request, res: Response) => {
         if (!code) return res.status(400).json({ message: 'Code is required' });
 
         // Change code for a token
-        const redirectUri = process.env.KAKAO_REDIRECT_URI || `${req.protocol}://${req.get('host')}/api/auth/kakao/callback`;
-        console.log(`[DEBUG] Kakao Login POST: protocol=${req.protocol}, host=${req.get('host')}, redirectUri=${redirectUri}`);
+        const hostname = req.get('host') || '';
+        const protocol = (req.headers['x-forwarded-proto'] as string) || req.protocol || 'http';
+        const origin = `${protocol}://${hostname}`;
+        const redirectUri = process.env.KAKAO_REDIRECT_URI || `${origin}/api/auth/kakao/callback`;
+
+        console.log(`[DEBUG] Kakao Login POST: origin=${origin}, redirectUri=${redirectUri}`);
 
         const tokenResponse = await axios.post('https://kauth.kakao.com/oauth/token', null, {
             params: {
@@ -129,12 +133,23 @@ export const kakaoLogin = async (req: Request, res: Response) => {
 
 export const kakaoCallback = async (req: Request, res: Response) => {
     try {
-        const { code } = req.query;
+        // Reuse the logic from kakaoLogin but for a GET request/redirect
+        const { code, state } = req.query;
         if (!code) return res.redirect('https://www.lookingall.com/login?error=no_code');
 
-        // Reuse the logic from kakaoLogin but for a GET request/redirect
-        const origin = `${req.protocol}://${req.get('host')}`;
-        const redirectUri = process.env.KAKAO_REDIRECT_URI || `${origin}/api/auth/kakao/callback`;
+        const hostname = req.get('host') || '';
+        const protocol = (req.headers['x-forwarded-proto'] as string) || req.protocol || 'http';
+        const origin = `${protocol}://${hostname}`;
+
+        // Use state to determine where to redirect back after login
+        let frontendOrigin = state ? decodeURIComponent(state as string) : 'https://www.lookingall.com';
+
+        // Ensure redirectUri matches EXACTLY what was sent to Kakao
+        // If it's production, we always use the official redirect URI
+        let redirectUri = process.env.KAKAO_REDIRECT_URI || `${origin}/api/auth/kakao/callback`;
+        if (hostname.includes('lookingall.com')) {
+            redirectUri = 'https://www.lookingall.com/api/auth/kakao/callback';
+        }
 
         console.log(`[DEBUG] Kakao Callback: protocol=${req.protocol}, host=${req.get('host')}, redirectUri=${redirectUri}`);
 
@@ -190,7 +205,7 @@ export const kakaoCallback = async (req: Request, res: Response) => {
 
         // Redirect back to frontend with token
         const frontendUser = encodeURIComponent(JSON.stringify({ id: user.id, email: user.email, name: user.name, role: user.role, profileImage: user.profileImage }));
-        const finalRedirectUrl = `https://www.lookingall.com/?token=${token}&user=${frontendUser}`;
+        const finalRedirectUrl = `${frontendOrigin.replace(/\/+$/, '')}/?token=${token}&user=${frontendUser}`;
         console.log('[DEBUG] Redirecting to:', finalRedirectUrl);
         res.redirect(finalRedirectUrl);
     } catch (error: any) {

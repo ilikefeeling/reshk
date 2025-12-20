@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 
@@ -18,27 +18,27 @@ export default function Header() {
     };
 
     return (
-        <View className="absolute top-0 left-0 right-0 h-14 bg-white shadow-md flex-row items-center justify-between px-4 z-10 pt-4">
+        <View style={styles.container}>
             {/* Left: Search Icon */}
             <TouchableOpacity aria-label="Search">
-                <Text className="text-xl">🔍</Text>
+                <Text style={styles.iconText}>🔍</Text>
             </TouchableOpacity>
 
             {/* Center: Logo */}
-            <View className="items-center">
-                <Text className="font-bold text-lg">Looking</Text>
+            <View style={styles.logoContainer}>
+                <Text style={styles.logoText}>Looking</Text>
             </View>
 
             {/* Right: Notification and Login/Logout */}
-            <View className="flex-row items-center space-x-2">
-                <TouchableOpacity aria-label="Notifications" className="mr-2">
-                    <Text className="text-xl">🔔</Text>
+            <View style={styles.rightSection}>
+                <TouchableOpacity aria-label="Notifications" style={styles.notificationIcon}>
+                    <Text style={styles.iconText}>🔔</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                    className={`${isLoggedIn ? 'bg-red-500' : 'bg-blue-500'} rounded px-2 py-1`}
+                    style={[styles.loginButton, { backgroundColor: isLoggedIn ? '#ef4444' : '#3b82f6' }]}
                     onPress={handleLoginPress}
                 >
-                    <Text className="text-sm text-white">
+                    <Text style={styles.loginButtonText}>
                         {isLoggedIn ? '로그아웃' : '로그인'}
                     </Text>
                 </TouchableOpacity>
@@ -46,3 +46,48 @@ export default function Header() {
         </View>
     );
 }
+
+const styles = StyleSheet.create({
+    container: {
+        height: 56,
+        backgroundColor: '#ffffff',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'between',
+        paddingHorizontal: 16,
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        zIndex: 10,
+    },
+    iconText: {
+        fontSize: 20,
+    },
+    logoContainer: {
+        alignItems: 'center',
+    },
+    logoText: {
+        fontWeight: 'bold',
+        fontSize: 18,
+        color: '#1f2937',
+    },
+    rightSection: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    notificationIcon: {
+        marginRight: 8,
+    },
+    loginButton: {
+        borderRadius: 4,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+    },
+    loginButtonText: {
+        fontSize: 14,
+        color: '#ffffff',
+        fontWeight: 'medium',
+    },
+});

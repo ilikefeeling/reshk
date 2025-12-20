@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Image as RNImage, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Image as RNImage, Alert, StyleSheet, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { initialRequests } from '../context/PostContext';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function RequestDetailScreen({ route, navigation }: any) {
     const { id } = route.params;
@@ -49,7 +51,7 @@ export default function RequestDetailScreen({ route, navigation }: any) {
 
     if (loading) {
         return (
-            <SafeAreaView className="flex-1 bg-white justify-center items-center">
+            <SafeAreaView style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color="#2563eb" />
             </SafeAreaView>
         );
@@ -57,17 +59,17 @@ export default function RequestDetailScreen({ route, navigation }: any) {
 
     if (!item) {
         return (
-            <SafeAreaView className="flex-1 bg-white justify-center items-center p-6">
+            <SafeAreaView style={styles.errorContainer}>
                 <Ionicons name="alert-circle-outline" size={64} color="#ef4444" />
-                <Text className="text-xl font-bold text-gray-900 mt-4">데이터를 불러올 수 없습니다</Text>
-                <Text className="text-gray-500 text-center mt-2 mb-8">
-                    요청하신 정보를 찾을 수 없거나{'\n'}로그인이 필요할 수 있습니다.
+                <Text style={styles.errorTitle}>데이터를 불러올 수 없습니다</Text>
+                <Text style={styles.errorSubtitle}>
+                    요청하신 정보를 찾을 수 없거나{"\n"}로그인이 필요할 수 있습니다.
                 </Text>
                 <TouchableOpacity
-                    className="bg-gray-900 px-8 py-3 rounded-full"
+                    style={styles.backHomeButton}
                     onPress={() => navigation.goBack()}
                 >
-                    <Text className="text-white font-bold">홈으로 돌아가기</Text>
+                    <Text style={styles.backHomeButtonText}>홈으로 돌아가기</Text>
                 </TouchableOpacity>
             </SafeAreaView>
         );
@@ -76,98 +78,100 @@ export default function RequestDetailScreen({ route, navigation }: any) {
     const isFoundItem = item.category === 'FOUND';
 
     return (
-        <SafeAreaView className="flex-1 bg-white">
-            <View className="flex-row items-center justify-between p-4 absolute top-0 left-0 right-0 z-10">
+        <SafeAreaView style={styles.safeArea}>
+            <View style={styles.floatingHeader}>
                 <TouchableOpacity
-                    className="bg-white/80 p-2 rounded-full"
+                    style={styles.iconButton}
                     onPress={() => navigation.goBack()}
                 >
                     <Ionicons name="arrow-back" size={24} color="black" />
                 </TouchableOpacity>
-                <TouchableOpacity className="bg-white/80 p-2 rounded-full">
+                <TouchableOpacity style={styles.iconButton}>
                     <Ionicons name="share-outline" size={24} color="black" />
                 </TouchableOpacity>
             </View>
 
-            <ScrollView>
+            <ScrollView style={styles.scrollView}>
                 {/* Image Carousel */}
                 {item.images && item.images.length > 0 ? (
-                    <ScrollView horizontal pagingEnabled className="h-72 bg-black">
+                    <ScrollView horizontal pagingEnabled style={styles.imageCarousel}>
                         {item.images.map((img: string, index: number) => (
                             <RNImage
                                 key={index}
                                 source={{ uri: img }}
-                                className="w-screen h-72"
+                                style={styles.carouselImage}
                                 resizeMode="cover"
                             />
                         ))}
                     </ScrollView>
                 ) : (
-                    <View className="h-72 bg-gray-200 items-center justify-center">
-                        <Ionicons name="image-outline" size={64} color="gray" />
-                        <Text className="text-gray-500 mt-2">No Image</Text>
+                    <View style={styles.noImageContainer}>
+                        <Ionicons name="image-outline" size={64} color="#9ca3af" />
+                        <Text style={styles.noImageText}>No Image</Text>
                     </View>
                 )}
 
-                <View className="p-6">
-                    <View className="flex-row justify-between items-start mb-4">
-                        <View className="flex-1 mr-4">
-                            <View className="flex-row items-center mb-1">
-                                <Text className={`px-2 py-0.5 rounded text-xs text-white mr-2 ${isFoundItem ? 'bg-green-500' : 'bg-blue-500'}`}>
-                                    {isFoundItem ? '습득물' : '분실물'}
-                                </Text>
-                                <Text className="text-gray-500 text-xs">{new Date(item.createdAt).toLocaleDateString()}</Text>
+                <View style={styles.contentContainer}>
+                    <View style={styles.itemHeader}>
+                        <View style={styles.headerMain}>
+                            <View style={styles.badgeRow}>
+                                <View style={[styles.categoryBadge, isFoundItem ? styles.foundBadge : styles.lostBadge]}>
+                                    <Text style={styles.categoryBadgeText}>
+                                        {isFoundItem ? '습득물' : '분실물'}
+                                    </Text>
+                                </View>
+                                <Text style={styles.dateText}>{new Date(item.createdAt).toLocaleDateString()}</Text>
                             </View>
-                            <Text className="text-2xl font-bold text-gray-900">{item.title}</Text>
-                            <Text className="text-gray-500 mt-1">📍 {item.location}</Text>
+                            <Text style={styles.titleText}>{item.title}</Text>
+                            <Text style={styles.locationText}>📍 {item.location}</Text>
                         </View>
                         {!isFoundItem && (
-                            <View className="bg-blue-100 px-4 py-2 rounded-full">
-                                <Text className="text-blue-600 font-bold text-lg">₩{Number(item.rewardAmount).toLocaleString()}</Text>
+                            <View style={styles.rewardBadge}>
+                                <Text style={styles.rewardText}>₩{Number(item.rewardAmount).toLocaleString()}</Text>
                             </View>
                         )}
                     </View>
 
                     <TouchableOpacity
                         onPress={() => navigation.navigate('UserDetail', { userId: item.userId })}
-                        className="flex-row items-center mb-6 p-4 bg-gray-50 rounded-xl"
+                        style={styles.userCard}
                     >
-                        <View className="w-12 h-12 bg-gray-300 rounded-full mr-4 items-center justify-center overflow-hidden">
+                        <View style={styles.avatarWrapper}>
                             {item.user?.profileImage ? (
-                                <RNImage source={{ uri: item.user.profileImage }} className="w-full h-full" />
+                                <RNImage source={{ uri: item.user.profileImage }} style={styles.avatarImage} />
                             ) : (
-                                <Ionicons name="person" size={24} color="gray" />
+                                <Ionicons name="person" size={24} color="#9ca3af" />
                             )}
                         </View>
-                        <View className="flex-1">
-                            <View className="flex-row items-center">
-                                <Text className="font-bold text-gray-900">{item.user?.name || 'Unknown User'}</Text>
+                        <View style={styles.userInfo}>
+                            <View style={styles.userNameRow}>
+                                <Text style={styles.userName}>{item.user?.name || 'Unknown User'}</Text>
                                 {item.user?.identityStatus === 'VERIFIED' && (
                                     <Ionicons name="checkmark-circle" size={14} color="#16a34a" style={{ marginLeft: 4 }} />
                                 )}
                             </View>
-                            <View className="flex-row items-center">
+                            <View style={styles.ratingRow}>
                                 <Ionicons name="star" size={14} color="#f59e0b" />
-                                <Text className="text-gray-500 text-sm ml-1">
+                                <Text style={styles.ratingText}>
                                     Rating {item.user?.rating?.toFixed(1) || '0.0'} ({item.user?.reviewCount || 0} reviews)
                                 </Text>
                             </View>
                         </View>
-                        <Ionicons name="chevron-forward" size={20} color="gray" />
+                        <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
                     </TouchableOpacity>
 
-                    <Text className="text-gray-800 text-lg leading-relaxed mb-8">
+                    <Text style={styles.descriptionText}>
                         {item.description}
                     </Text>
                 </View>
             </ScrollView>
 
-            <View className="p-4 border-t border-gray-100 bg-white">
+            <View style={styles.bottomActionArea}>
                 {item.userId === currentUserId ? (
                     // If current user is the owner
                     item.status === 'IN_PROGRESS' ? (
                         <TouchableOpacity
-                            className="bg-green-600 p-4 rounded-xl items-center shadow-lg"
+                            style={[styles.actionButton, styles.completeButton]}
                             onPress={async () => {
                                 Alert.alert(
                                     'Complete Request',
@@ -178,10 +182,7 @@ export default function RequestDetailScreen({ route, navigation }: any) {
                                             text: 'Yes, Completed',
                                             onPress: async () => {
                                                 try {
-                                                    const res = await api.put(`/requests/${item.id}/complete`);
-                                                    // In a real app, we need to know WHO helped. 
-                                                    // For now, let's assume there's a chat partner or helperId.
-                                                    // I'll just navigate to home or show alert.
+                                                    await api.put(`/requests/${item.id}/complete`);
                                                     Alert.alert('Success', 'Request marked as completed!');
                                                     navigation.navigate('Main');
                                                 } catch (error) {
@@ -193,36 +194,36 @@ export default function RequestDetailScreen({ route, navigation }: any) {
                                 );
                             }}
                         >
-                            <Text className="text-white font-bold text-lg">거래 완료하기</Text>
+                            <Text style={styles.actionButtonText}>거래 완료하기</Text>
                         </TouchableOpacity>
                     ) : item.status === 'COMPLETED' && !item.hasReview ? (
                         <TouchableOpacity
-                            className="bg-amber-500 p-4 rounded-xl items-center shadow-lg"
+                            style={[styles.actionButton, styles.reviewButton]}
                             onPress={() => navigation.navigate('Review', {
                                 requestId: item.id,
-                                targetUserId: 0, // Need to identify the helper
+                                targetUserId: 0,
                                 targetUserName: 'Helper'
                             })}
                         >
-                            <Text className="text-white font-bold text-lg">후기 작성하기</Text>
+                            <Text style={styles.actionButtonText}>후기 작성하기</Text>
                         </TouchableOpacity>
                     ) : (
-                        <View className="bg-gray-100 p-4 rounded-xl items-center">
-                            <Text className="text-gray-500 font-bold">진행 중인 거래가 없습니다</Text>
+                        <View style={styles.disabledActionView}>
+                            <Text style={styles.disabledActionText}>진행 중인 거래가 없습니다</Text>
                         </View>
                     )
                 ) : (
                     // If current user is NOT the owner
                     isFoundItem ? (
                         <TouchableOpacity
-                            className="bg-green-600 p-4 rounded-xl items-center shadow-lg"
+                            style={[styles.actionButton, styles.foundActionButton]}
                             onPress={() => navigation.navigate('Chat', { roomId: null, recipientId: item.userId })}
                         >
-                            <Text className="text-white font-bold text-lg">제보자와 채팅하기</Text>
+                            <Text style={styles.actionButtonText}>제보자와 채팅하기</Text>
                         </TouchableOpacity>
                     ) : (
                         <TouchableOpacity
-                            className="bg-blue-600 p-4 rounded-xl items-center shadow-lg"
+                            style={[styles.actionButton, styles.lostActionButton]}
                             onPress={() => navigation.navigate('Payment', {
                                 amount: item.rewardAmount,
                                 title: item.title,
@@ -230,7 +231,7 @@ export default function RequestDetailScreen({ route, navigation }: any) {
                                 requestId: item.id
                             })}
                         >
-                            <Text className="text-white font-bold text-lg">사례금 지급하기 (₩{Number(item.rewardAmount).toLocaleString()})</Text>
+                            <Text style={styles.actionButtonText}>사례금 지급하기 (₩{Number(item.rewardAmount).toLocaleString()})</Text>
                         </TouchableOpacity>
                     )
                 )}
@@ -238,3 +239,233 @@ export default function RequestDetailScreen({ route, navigation }: any) {
         </SafeAreaView>
     );
 }
+
+const styles = StyleSheet.create({
+    safeArea: {
+        flex: 1,
+        backgroundColor: '#ffffff',
+    },
+    loadingContainer: {
+        flex: 1,
+        backgroundColor: '#ffffff',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    errorContainer: {
+        flex: 1,
+        backgroundColor: '#ffffff',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 24,
+    },
+    errorTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#111827',
+        marginTop: 16,
+    },
+    errorSubtitle: {
+        color: '#6b7280',
+        textAlign: 'center',
+        marginTop: 8,
+        marginBottom: 32,
+        lineHeight: 20,
+    },
+    backHomeButton: {
+        backgroundColor: '#111827',
+        paddingVertical: 12,
+        paddingHorizontal: 32,
+        borderRadius: 999,
+    },
+    backHomeButtonText: {
+        color: '#ffffff',
+        fontWeight: 'bold',
+    },
+    floatingHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: 16,
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 10,
+    },
+    iconButton: {
+        backgroundColor: 'rgba(255, 255, 255, 0.8)',
+        padding: 8,
+        borderRadius: 999,
+    },
+    scrollView: {
+        flex: 1,
+    },
+    imageCarousel: {
+        height: 288, // 72 * 4
+        backgroundColor: '#000000',
+    },
+    carouselImage: {
+        width: SCREEN_WIDTH,
+        height: 288,
+    },
+    noImageContainer: {
+        height: 288,
+        backgroundColor: '#f3f4f6',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    noImageText: {
+        color: '#6b7280',
+        marginTop: 8,
+    },
+    contentContainer: {
+        padding: 24,
+    },
+    itemHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        marginBottom: 16,
+    },
+    headerMain: {
+        flex: 1,
+        marginRight: 16,
+    },
+    badgeRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 4,
+    },
+    categoryBadge: {
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 4,
+        marginRight: 8,
+    },
+    foundBadge: {
+        backgroundColor: '#22c55e',
+    },
+    lostBadge: {
+        backgroundColor: '#3b82f6',
+    },
+    categoryBadgeText: {
+        color: '#ffffff',
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    dateText: {
+        color: '#6b7280',
+        fontSize: 12,
+    },
+    titleText: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#111827',
+    },
+    locationText: {
+        color: '#6b7280',
+        marginTop: 4,
+    },
+    rewardBadge: {
+        backgroundColor: '#eff6ff',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 999,
+    },
+    rewardText: {
+        color: '#2563eb',
+        fontWeight: 'bold',
+        fontSize: 18,
+    },
+    userCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 24,
+        padding: 16,
+        backgroundColor: '#f9fafb',
+        borderRadius: 16,
+    },
+    avatarWrapper: {
+        width: 48,
+        height: 48,
+        backgroundColor: '#e5e7eb',
+        borderRadius: 24,
+        marginRight: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+    },
+    avatarImage: {
+        width: '100%',
+        height: '100%',
+    },
+    userInfo: {
+        flex: 1,
+    },
+    userNameRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    userName: {
+        fontWeight: 'bold',
+        color: '#111827',
+    },
+    ratingRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    ratingText: {
+        color: '#6b7280',
+        fontSize: 14,
+        marginLeft: 4,
+    },
+    descriptionText: {
+        color: '#1f2937',
+        fontSize: 16,
+        lineHeight: 24,
+        marginBottom: 32,
+    },
+    bottomActionArea: {
+        padding: 16,
+        borderTopWidth: 1,
+        borderTopColor: '#f3f4f6',
+        backgroundColor: '#ffffff',
+    },
+    actionButton: {
+        padding: 16,
+        borderRadius: 12,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    actionButtonText: {
+        color: '#ffffff',
+        fontWeight: 'bold',
+        fontSize: 18,
+    },
+    completeButton: {
+        backgroundColor: '#16a34a',
+    },
+    reviewButton: {
+        backgroundColor: '#f59e0b',
+    },
+    foundActionButton: {
+        backgroundColor: '#16a34a',
+    },
+    lostActionButton: {
+        backgroundColor: '#2563eb',
+    },
+    disabledActionView: {
+        backgroundColor: '#f3f4f6',
+        padding: 16,
+        borderRadius: 12,
+        alignItems: 'center',
+    },
+    disabledActionText: {
+        color: '#9ca3af',
+        fontWeight: 'bold',
+    },
+});

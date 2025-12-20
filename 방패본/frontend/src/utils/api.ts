@@ -8,7 +8,7 @@ import { Platform } from 'react-native';
 const IS_PROD = !__DEV__ || Platform.OS === 'web' && !window.location.hostname.includes('localhost');
 const BASE_URL = IS_PROD
     ? 'https://www.lookingall.com/api'
-    : 'http://localhost:3002/api';
+    : 'http://192.168.1.112:3002/api';
 
 console.log('Current API BASE_URL:', BASE_URL);
 
@@ -45,7 +45,7 @@ api.interceptors.response.use(
 api.interceptors.request.use(
     async (config) => {
         const token = await AsyncStorage.getItem('token');
-        console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
+        console.log(`[API Request] [${config.method?.toUpperCase()}] ${config.url} | BASE_URL: ${BASE_URL} | Token Present: ${!!token}`);
         if (token && token !== 'null' && token !== 'undefined') {
             config.headers.Authorization = `Bearer ${token}`;
         }

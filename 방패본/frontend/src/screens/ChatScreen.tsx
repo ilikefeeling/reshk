@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import io from 'socket.io-client';
@@ -65,27 +65,27 @@ export default function ChatScreen({ route, navigation }: any) {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-            <View className="flex-row items-center p-4 border-b border-gray-100">
-                <TouchableOpacity onPress={() => navigation.goBack()}>
+        <SafeAreaView style={styles.safeArea} edges={['top']}>
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color="black" />
                 </TouchableOpacity>
-                <Text className="text-lg font-bold ml-4">{title || 'Chat'}</Text>
+                <Text style={styles.headerTitle}>{title || 'Chat'}</Text>
             </View>
 
             <FlatList
                 data={messages}
                 keyExtractor={(item, index) => index.toString()}
-                contentContainerStyle={{ padding: 16 }}
+                contentContainerStyle={styles.listContent}
                 renderItem={({ item }) => {
                     const isMyMessage = item.senderId === userId;
                     return (
-                        <View className={`mb-4 flex-row ${isMyMessage ? 'justify-end' : 'justify-start'}`}>
+                        <View style={[styles.messageWrapper, isMyMessage ? styles.myMessageWrapper : styles.otherMessageWrapper]}>
                             {!isMyMessage && (
-                                <View className="w-8 h-8 bg-gray-300 rounded-full mr-2" />
+                                <View style={styles.avatarPlaceholder} />
                             )}
-                            <View className={`p-3 rounded-2xl max-w-[70%] ${isMyMessage ? 'bg-blue-600' : 'bg-gray-100'}`}>
-                                <Text className={isMyMessage ? 'text-white' : 'text-gray-800'}>
+                            <View style={[styles.bubble, isMyMessage ? styles.myBubble : styles.otherBubble]}>
+                                <Text style={isMyMessage ? styles.myMessageText : styles.otherMessageText}>
                                     {item.content}
                                 </Text>
                             </View>
@@ -98,15 +98,16 @@ export default function ChatScreen({ route, navigation }: any) {
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
             >
-                <View className="flex-row items-center p-4 border-t border-gray-100 bg-white">
+                <View style={styles.inputArea}>
                     <TextInput
-                        className="flex-1 bg-gray-100 p-3 rounded-full mr-2"
+                        style={styles.textInput}
                         placeholder="Type a message..."
                         value={inputText}
                         onChangeText={setInputText}
+                        placeholderTextColor="#9ca3af"
                     />
                     <TouchableOpacity
-                        className="bg-blue-600 p-3 rounded-full"
+                        style={styles.sendButton}
                         onPress={sendMessage}
                     >
                         <Ionicons name="send" size={20} color="white" />
@@ -116,3 +117,98 @@ export default function ChatScreen({ route, navigation }: any) {
         </SafeAreaView>
     );
 }
+
+const styles = StyleSheet.create({
+    safeArea: {
+        flex: 1,
+        backgroundColor: '#ffffff',
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f3f4f6',
+        backgroundColor: '#ffffff',
+    },
+    backButton: {
+        padding: 4,
+    },
+    headerTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginLeft: 16,
+        color: '#111827',
+    },
+    listContent: {
+        padding: 16,
+        paddingBottom: 32,
+    },
+    messageWrapper: {
+        marginBottom: 16,
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+    },
+    myMessageWrapper: {
+        justifyContent: 'flex-end',
+    },
+    otherMessageWrapper: {
+        justifyContent: 'flex-start',
+    },
+    avatarPlaceholder: {
+        width: 32,
+        height: 32,
+        backgroundColor: '#e5e7eb',
+        borderRadius: 16,
+        marginRight: 8,
+    },
+    bubble: {
+        padding: 12,
+        borderRadius: 20,
+        maxWidth: '75%',
+    },
+    myBubble: {
+        backgroundColor: '#2563eb', // blue-600
+        borderBottomRightRadius: 4,
+    },
+    otherBubble: {
+        backgroundColor: '#f3f4f6', // gray-100
+        borderBottomLeftRadius: 4,
+    },
+    myMessageText: {
+        color: '#ffffff',
+        fontSize: 15,
+    },
+    otherMessageText: {
+        color: '#1f2937',
+        fontSize: 15,
+    },
+    inputArea: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 12,
+        paddingHorizontal: 16,
+        borderTopWidth: 1,
+        borderTopColor: '#f3f4f6',
+        backgroundColor: '#ffffff',
+        paddingBottom: Platform.OS === 'ios' ? 32 : 12,
+    },
+    textInput: {
+        flex: 1,
+        backgroundColor: '#f3f4f6',
+        paddingVertical: 10,
+        paddingHorizontal: 16,
+        borderRadius: 24,
+        marginRight: 10,
+        fontSize: 16,
+        color: '#111827',
+    },
+    sendButton: {
+        backgroundColor: '#2563eb',
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+});

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../utils/api';
@@ -48,13 +48,13 @@ export default function TransactionHistoryScreen({ navigation }: any) {
         }
     };
 
-    const getStatusColor = (status: string) => {
+    const getStatusStyle = (status: string) => {
         switch (status) {
-            case 'COMPLETED': return 'text-green-600';
-            case 'PENDING': return 'text-yellow-600';
-            case 'FAILED': return 'text-red-600';
-            case 'REFUNDED': return 'text-gray-600';
-            default: return 'text-gray-600';
+            case 'COMPLETED': return styles.statusCompleted;
+            case 'PENDING': return styles.statusPending;
+            case 'FAILED': return styles.statusFailed;
+            case 'REFUNDED': return styles.statusRefunded;
+            default: return styles.statusDefault;
         }
     };
 
@@ -79,14 +79,14 @@ export default function TransactionHistoryScreen({ navigation }: any) {
 
     if (loading) {
         return (
-            <SafeAreaView className="flex-1 bg-white">
-                <View className="flex-row items-center p-4 border-b border-gray-100">
-                    <TouchableOpacity onPress={() => navigation.goBack()}>
+            <SafeAreaView style={styles.safeArea}>
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                         <Ionicons name="arrow-back" size={24} color="black" />
                     </TouchableOpacity>
-                    <Text className="text-lg font-bold ml-4">거래 내역</Text>
+                    <Text style={styles.headerTitle}>거래 내역</Text>
                 </View>
-                <View className="flex-1 justify-center items-center">
+                <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color="#2563eb" />
                 </View>
             </SafeAreaView>
@@ -94,63 +94,169 @@ export default function TransactionHistoryScreen({ navigation }: any) {
     }
 
     return (
-        <SafeAreaView className="flex-1 bg-white">
-            <View className="flex-row items-center p-4 border-b border-gray-100">
-                <TouchableOpacity onPress={() => navigation.goBack()}>
+        <SafeAreaView style={styles.safeArea}>
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color="black" />
                 </TouchableOpacity>
-                <Text className="text-lg font-bold ml-4">거래 내역</Text>
+                <Text style={styles.headerTitle}>거래 내역</Text>
+                <View style={{ width: 32 }} />
             </View>
 
             <FlatList
                 data={transactions}
                 keyExtractor={(item) => item.id.toString()}
                 refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#2563eb" />
                 }
+                contentContainerStyle={styles.listContent}
                 renderItem={({ item }) => (
-                    <View className="p-4 border-b border-gray-100">
-                        <View className="flex-row justify-between items-start">
-                            <View className="flex-row items-center flex-1">
+                    <View style={styles.transactionCard}>
+                        <View style={styles.cardLeft}>
+                            <View style={[styles.iconContainer, { backgroundColor: getTypeColor(item.type) + '10' }]}>
                                 <Ionicons
                                     name={getTypeIcon(item.type)}
                                     size={24}
                                     color={getTypeColor(item.type)}
                                 />
-                                <View className="ml-3 flex-1">
-                                    <Text className="font-semibold">{getTypeLabel(item.type)}</Text>
-                                    <Text className="text-gray-500 text-sm">
-                                        {item.request?.title || '거래'}
-                                    </Text>
-                                    <Text className="text-gray-400 text-xs mt-1">
-                                        {new Date(item.createdAt).toLocaleDateString('ko-KR', {
-                                            year: 'numeric',
-                                            month: 'long',
-                                            day: 'numeric',
-                                            hour: '2-digit',
-                                            minute: '2-digit'
-                                        })}
-                                    </Text>
-                                </View>
                             </View>
-                            <View className="items-end">
-                                <Text className="font-bold text-lg">
-                                    {Number(item.amount).toLocaleString()}원
+                            <View style={styles.detailsContainer}>
+                                <Text style={styles.typeLabel}>{getTypeLabel(item.type)}</Text>
+                                <Text style={styles.requestTitle} numberOfLines={1}>
+                                    {item.request?.title || '거래'}
                                 </Text>
-                                <Text className={`text-sm ${getStatusColor(item.status)}`}>
-                                    {getStatusLabel(item.status)}
+                                <Text style={styles.dateText}>
+                                    {new Date(item.createdAt).toLocaleDateString('ko-KR', {
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                    })}
                                 </Text>
                             </View>
+                        </View>
+                        <View style={styles.cardRight}>
+                            <Text style={styles.amountText}>
+                                {Number(item.amount).toLocaleString()}원
+                            </Text>
+                            <Text style={[styles.statusLabel, getStatusStyle(item.status)]}>
+                                {getStatusLabel(item.status)}
+                            </Text>
                         </View>
                     </View>
                 )}
                 ListEmptyComponent={
-                    <View className="flex-1 justify-center items-center p-8 mt-20">
-                        <Ionicons name="receipt-outline" size={64} color="#ccc" />
-                        <Text className="text-gray-400 mt-4 text-center">거래 내역이 없습니다</Text>
+                    <View style={styles.emptyContainer}>
+                        <Ionicons name="receipt-outline" size={64} color="#d1d5db" />
+                        <Text style={styles.emptyText}>거래 내역이 없습니다</Text>
                     </View>
                 }
             />
         </SafeAreaView>
     );
 }
+
+const styles = StyleSheet.create({
+    safeArea: {
+        flex: 1,
+        backgroundColor: '#ffffff',
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f3f4f6',
+        backgroundColor: '#ffffff',
+    },
+    backButton: {
+        padding: 4,
+    },
+    headerTitle: {
+        flex: 1,
+        textAlign: 'center',
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#111827',
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    listContent: {
+        paddingBottom: 20,
+    },
+    transactionCard: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        padding: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f9fafb',
+        backgroundColor: '#ffffff',
+    },
+    cardLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+    },
+    iconContainer: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    detailsContainer: {
+        marginLeft: 16,
+        flex: 1,
+    },
+    typeLabel: {
+        fontSize: 15,
+        fontWeight: 'bold',
+        color: '#111827',
+        marginBottom: 2,
+    },
+    requestTitle: {
+        fontSize: 14,
+        color: '#4b5563',
+        marginBottom: 4,
+    },
+    dateText: {
+        fontSize: 12,
+        color: '#9ca3af',
+    },
+    cardRight: {
+        alignItems: 'end',
+        justifyContent: 'center',
+    },
+    amountText: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#111827',
+        marginBottom: 4,
+    },
+    statusLabel: {
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    statusCompleted: { color: '#059669' },
+    statusPending: { color: '#d97706' },
+    statusFailed: { color: '#dc2626' },
+    statusRefunded: { color: '#6b7280' },
+    statusDefault: { color: '#6b7280' },
+    emptyContainer: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 100,
+        padding: 40,
+    },
+    emptyText: {
+        marginTop: 16,
+        color: '#9ca3af',
+        fontSize: 16,
+        textAlign: 'center',
+    },
+});

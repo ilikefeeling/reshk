@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import Header from '../components/Header';
@@ -25,26 +24,16 @@ export default function HomePage() {
     const fetchRequests = async () => {
         try {
             setLoading(true);
-            console.log('[DEBUG] HomePage: Fetching requests from', api.defaults.baseURL);
             const response = await api.get('/requests');
-            console.log('[DEBUG] HomePage: Received', response.data.length, 'requests');
-
-            // API 데이터를 UI에서 기대하는 형식으로 매핑
             const mappedData = response.data.map(req => ({
                 ...req,
                 reward: `₩${Number(req.rewardAmount).toLocaleString()}`,
                 date: new Date(req.createdAt).toLocaleDateString(),
                 keyword: req.category === 'LOST' || req.category === 'FOUND' ? (req.title.includes('아이폰') ? '아이폰' : (req.title.includes('강아지') || req.title.includes('개') ? '말티즈' : '가구')) : '가구'
             }));
-
-            console.log('[DEBUG] HomePage: Data mapped successfully. Item count:', mappedData.length);
             if (setRequests) setRequests(mappedData);
         } catch (error) {
             console.error('[DEBUG] HomePage: Fetch Error:', error.message);
-            if (error.response) {
-                console.error('  Status:', error.response.status);
-                console.error('  Data:', error.response.data);
-            }
         } finally {
             setLoading(false);
         }
@@ -54,7 +43,6 @@ export default function HomePage() {
         fetchRequests();
     }, []);
 
-    // Refresh when screen comes into focus
     const { useFocusEffect } = require('@react-navigation/native');
     useFocusEffect(
         React.useCallback(() => {
@@ -62,109 +50,270 @@ export default function HomePage() {
         }, [])
     );
 
-    const handleProtectedAction = (screen) => {
+    const handleProtectedAction = async (screen) => {
+        // If already recognized as logged in, proceed
         if (isLoggedIn) {
             navigation.navigate(screen);
+            return;
+        }
+
+        // Check AsyncStorage directly to handle race condition where isLoggedIn state hasn't updated yet
+        const token = await AsyncStorage.getItem('token');
+        if (token && token !== 'null' && token !== 'undefined') {
+            navigation.navigate(screen);
         } else {
+            console.log(`[AUTH] Unauthorized access attempt to ${screen}. Redirecting to Login.`);
             navigation.navigate('Login', { redirect: screen });
         }
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-gray-50">
+        <SafeAreaView style={styles.safeArea}>
             <Header />
-            <ScrollView className="flex-1 mt-14 mb-16" contentContainerStyle={{ paddingBottom: 20 }}>
+            <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
                 {/* Banner */}
-                <View className="bg-blue-100 rounded-lg p-4 m-4 shadow-sm items-center relative">
+                <View style={styles.banner}>
                     <TouchableOpacity
-                        className="absolute top-2 right-2 p-2 bg-white/40 rounded-full z-10"
+                        style={styles.infoIcon}
                         onPress={() => navigation.navigate('Guide')}
                     >
                         <Ionicons name="information-circle-outline" size={20} color="#1e40af" />
                     </TouchableOpacity>
 
-                    <Text className="text-lg font-bold mb-2 text-center text-gray-800 mt-2">
+                    <Text style={styles.bannerTitle}>
                         우리 서비스에 오신 것을 환영합니다
                     </Text>
 
-                    <View className="flex-row justify-center space-x-4 mt-2">
+                    <View style={styles.bannerButtons}>
                         <TouchableOpacity
-                            className="bg-blue-500 rounded-lg px-4 py-2 mr-2"
+                            style={[styles.button, { backgroundColor: '#3b82f6' }]}
                             onPress={() => handleProtectedAction('CreateRequest')}
                         >
-                            <Text className="text-white font-bold">의뢰하기</Text>
+                            <Text style={styles.buttonText}>의뢰하기</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
-                            className="bg-green-500 rounded-lg px-4 py-2"
+                            style={[styles.button, { backgroundColor: '#22c55e' }]}
                             onPress={() => handleProtectedAction('CreateReport')}
                         >
-                            <Text className="text-white font-bold">제보하기</Text>
+                            <Text style={styles.buttonText}>제보하기</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
 
                 {/* Service Info */}
-                <View className="flex-row justify-between mb-4 mx-4">
+                <View style={styles.serviceInfoRow}>
                     <TouchableOpacity
-                        className="flex-1 items-center bg-white rounded-lg p-3 mx-1 shadow-sm"
+                        style={styles.serviceCard}
                         onPress={() => navigation.navigate('ServiceInfo', { initialSection: 1 })}
                     >
-                        <Text className="text-2xl mb-1">💰</Text>
-                        <Text className="text-sm font-medium text-gray-700">사례금</Text>
+                        <Text style={styles.cardEmoji}>💰</Text>
+                        <Text style={styles.cardText}>사례금</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                        className="flex-1 items-center bg-white rounded-lg p-3 mx-1 shadow-sm"
+                        style={styles.serviceCard}
                         onPress={() => navigation.navigate('ServiceInfo', { initialSection: 2 })}
                     >
-                        <Text className="text-2xl mb-1">🛡️</Text>
-                        <Text className="text-sm font-medium text-gray-700">보증금</Text>
+                        <Text style={styles.cardEmoji}>🛡️</Text>
+                        <Text style={styles.cardText}>보증금</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                        className="flex-1 items-center bg-white rounded-lg p-3 mx-1 shadow-sm"
+                        style={styles.serviceCard}
                         onPress={() => navigation.navigate('ServiceInfo', { initialSection: 3 })}
                     >
-                        <Text className="text-2xl mb-1">✅</Text>
-                        <Text className="text-sm font-medium text-gray-700">100% 지급</Text>
+                        <Text style={styles.cardEmoji}>✅</Text>
+                        <Text style={styles.cardText}>100% 지급</Text>
                     </TouchableOpacity>
                 </View>
 
                 {/* Request List Header */}
-                <View className="flex-row justify-between items-center mb-2 px-6">
-                    <Text className="font-semibold text-lg text-gray-800">최근 의뢰</Text>
+                <View style={styles.listHeader}>
+                    <Text style={styles.listHeaderText}>최근 의뢰</Text>
                     <TouchableOpacity onPress={() => console.log('Load more')}>
-                        <Text className="text-blue-500 text-sm">더보기 &gt;</Text>
+                        <Text style={styles.moreText}>더보기 &gt;</Text>
                     </TouchableOpacity>
                 </View>
 
                 {/* Request List */}
-                <View className="px-4 space-y-3">
+                <View style={styles.listContainer}>
                     {requests.map((req) => (
                         <TouchableOpacity
                             key={req.id}
-                            className="flex-row items-center bg-white rounded-lg p-4 mb-3 shadow-sm border border-gray-100"
+                            style={styles.requestItem}
                             onPress={() => navigation.navigate('RequestDetail', { id: req.id })}
                         >
-                            {/* Icon */}
-                            <View className="w-12 h-12 items-center justify-center bg-gray-100 rounded-full mr-3">
-                                <Text className="text-2xl">{iconMap[req.keyword] || '❓'}</Text>
+                            <View style={styles.itemIconContainer}>
+                                <Text style={styles.itemEmoji}>{iconMap[req.keyword] || '❓'}</Text>
                             </View>
-                            {/* Info */}
-                            <View className="flex-1">
-                                <Text className="font-bold text-gray-800 text-base mb-1">{req.title}</Text>
-                                <Text className="text-xs text-gray-500">
+                            <View style={styles.itemInfo}>
+                                <Text style={styles.itemTitle}>{req.title}</Text>
+                                <Text style={styles.itemDate}>
                                     {req.date} • 조회 0
                                 </Text>
                             </View>
-                            {/* Price */}
-                            <View className="bg-blue-50 px-3 py-1 rounded-md">
-                                <Text className="text-sm font-bold text-blue-600">
+                            <View style={styles.priceTag}>
+                                <Text style={styles.priceText}>
                                     {req.rewardAmount ? `₩${Number(req.rewardAmount).toLocaleString()}` : (req.reward || '₩0')}
                                 </Text>
                             </View>
                         </TouchableOpacity>
                     ))}
                 </View>
-            </ScrollView >
-        </SafeAreaView >
+            </ScrollView>
+        </SafeAreaView>
     );
 }
+
+const styles = StyleSheet.create({
+    safeArea: {
+        flex: 1,
+        backgroundColor: '#f9fafb',
+    },
+    scrollView: {
+        flex: 1,
+    },
+    scrollContent: {
+        paddingBottom: 20,
+    },
+    banner: {
+        backgroundColor: '#dbeafe',
+        borderRadius: 12,
+        padding: 16,
+        margin: 16,
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+        alignItems: 'center',
+        position: 'relative',
+    },
+    infoIcon: {
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        padding: 8,
+        backgroundColor: 'rgba(255,255,255,0.4)',
+        borderRadius: 20,
+    },
+    bannerTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 8,
+        textAlign: 'center',
+        color: '#1f2937',
+        marginTop: 8,
+    },
+    bannerButtons: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        marginTop: 8,
+    },
+    button: {
+        borderRadius: 8,
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        marginHorizontal: 4,
+    },
+    buttonText: {
+        color: '#ffffff',
+        fontWeight: 'bold',
+    },
+    serviceInfoRow: {
+        flexDirection: 'row',
+        justifyContent: 'between',
+        marginBottom: 16,
+        marginHorizontal: 16,
+    },
+    serviceCard: {
+        flex: 1,
+        alignItems: 'center',
+        backgroundColor: '#ffffff',
+        borderRadius: 8,
+        padding: 12,
+        marginHorizontal: 4,
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+    },
+    cardEmoji: {
+        fontSize: 24,
+        marginBottom: 4,
+    },
+    cardText: {
+        fontSize: 12,
+        fontWeight: '500',
+        color: '#374151',
+    },
+    listHeader: {
+        flexDirection: 'row',
+        justifyContent: 'between',
+        alignItems: 'center',
+        marginBottom: 8,
+        paddingHorizontal: 24,
+    },
+    listHeaderText: {
+        fontWeight: '600',
+        fontSize: 18,
+        color: '#1f2937',
+    },
+    moreText: {
+        color: '#3b82f6',
+        fontSize: 14,
+    },
+    listContainer: {
+        paddingHorizontal: 16,
+    },
+    requestItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#ffffff',
+        borderRadius: 8,
+        padding: 16,
+        marginBottom: 12,
+        elevation: 1,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        borderWidth: 1,
+        borderColor: '#f3f4f6',
+    },
+    itemIconContainer: {
+        width: 48,
+        height: 48,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#f3f4f6',
+        borderRadius: 24,
+        marginRight: 12,
+    },
+    itemEmoji: {
+        fontSize: 24,
+    },
+    itemInfo: {
+        flex: 1,
+    },
+    itemTitle: {
+        fontWeight: 'bold',
+        color: '#1f2937',
+        fontSize: 16,
+        marginBottom: 4,
+    },
+    itemDate: {
+        fontSize: 12,
+        color: '#6b7280',
+    },
+    priceTag: {
+        backgroundColor: '#eff6ff',
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        borderRadius: 6,
+    },
+    priceText: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#2563eb',
+    },
+});

@@ -1,5 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Alert, SafeAreaView, TextInput, FlatList, RefreshControl, Image } from 'react-native';
+import {
+    View,
+    Text,
+    TouchableOpacity,
+    ScrollView,
+    ActivityIndicator,
+    Alert,
+    SafeAreaView,
+    TextInput,
+    FlatList,
+    RefreshControl,
+    Image,
+    StyleSheet,
+    Dimensions
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
@@ -117,60 +131,60 @@ const AdminDashboardScreen = ({ navigation }: any) => {
     const TabButton = ({ tab, icon, label }: { tab: AdminTab; icon: string; label: string }) => (
         <TouchableOpacity
             onPress={() => setActiveTab(tab)}
-            className={`flex-1 items-center py-3 ${activeTab === tab ? 'border-b-2 border-indigo-600' : ''}`}
+            style={[styles.tabButton, activeTab === tab && styles.tabButtonActive]}
         >
             <Ionicons name={icon as any} size={20} color={activeTab === tab ? '#4f46e5' : '#9ca3af'} />
-            <Text className={`text-[10px] mt-1 font-bold ${activeTab === tab ? 'text-indigo-600' : 'text-gray-400'}`}>{label}</Text>
+            <Text style={[styles.tabLabel, activeTab === tab && styles.tabLabelActive]}>{label}</Text>
         </TouchableOpacity>
     );
 
     const StatCard = ({ title, value, icon, color }: any) => (
-        <View className="bg-white p-4 rounded-3xl shadow-sm border border-gray-100 flex-1 mx-1">
-            <View className={`w-10 h-10 rounded-2xl items-center justify-center mb-2 ${color}`}>
+        <View style={styles.statCard}>
+            <View style={[styles.statIconWrapper, { backgroundColor: color }]}>
                 <Ionicons name={icon} size={20} color="white" />
             </View>
-            <Text className="text-gray-400 text-[10px] mb-1">{title}</Text>
-            <Text className="text-lg font-bold text-gray-800">{value}</Text>
+            <Text style={styles.statTitle}>{title}</Text>
+            <Text style={styles.statValue}>{value}</Text>
         </View>
     );
 
     const renderDashboard = () => (
         <ScrollView
-            className="flex-1 px-4"
+            style={styles.dashboardScroll}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
-            <View className="flex-row mt-4 mb-4">
-                <StatCard title="오늘 신규" value={stats?.today || 0} icon="add-circle" color="bg-indigo-500" />
-                <StatCard title="승인 대기" value={stats?.pending || 0} icon="time" color="bg-amber-500" />
+            <View style={styles.statRow}>
+                <StatCard title="오늘 신규" value={stats?.today || 0} icon="add-circle" color="#6366f1" />
+                <StatCard title="승인 대기" value={stats?.pending || 0} icon="time" color="#f59e0b" />
             </View>
-            <View className="flex-row mb-6">
-                <StatCard title="총 거래량" value={`${((stats?.revenue || 0) / 10000).toFixed(1)}만`} icon="wallet" color="bg-emerald-500" />
-                <StatCard title="CS 티켓" value={tickets.filter(t => t.status === 'OPEN').length} icon="chatbubbles" color="bg-rose-500" />
+            <View style={styles.statRow}>
+                <StatCard title="총 거래량" value={`${((stats?.revenue || 0) / 10000).toFixed(1)}만`} icon="wallet" color="#10b981" />
+                <StatCard title="CS 티켓" value={tickets.filter(t => t.status === 'OPEN').length} icon="chatbubbles" color="#f43f5e" />
             </View>
 
-            <Text className="text-lg font-bold text-gray-800 mb-4">긴급 조치 사항</Text>
+            <Text style={styles.sectionTitle}>긴급 조치 사항</Text>
             {tickets.filter(t => t.priority === 'URGENT' || t.priority === 'HIGH').map(ticket => (
-                <View key={ticket.id} className="bg-rose-50 p-4 rounded-2xl mb-3 border border-rose-100 flex-row items-center">
+                <View key={ticket.id} style={styles.urgentCard}>
                     <Ionicons name="alert-circle" size={24} color="#e11d48" />
-                    <View className="ml-3 flex-1">
-                        <Text className="text-rose-900 font-bold text-sm">{ticket.subject}</Text>
-                        <Text className="text-rose-700 text-xs">{ticket.user?.name} · {new Date(ticket.createdAt).toLocaleDateString()}</Text>
+                    <View style={styles.urgentInfo}>
+                        <Text style={styles.urgentSubject}>{ticket.subject}</Text>
+                        <Text style={styles.urgentMeta}>{ticket.user?.name} · {new Date(ticket.createdAt).toLocaleDateString()}</Text>
                     </View>
-                    <TouchableOpacity onPress={() => setActiveTab('CS_Support')} className="bg-white px-3 py-1.5 rounded-xl">
-                        <Text className="text-rose-600 text-xs font-bold">확인</Text>
+                    <TouchableOpacity onPress={() => setActiveTab('CS_Support')} style={styles.urgentBadge}>
+                        <Text style={styles.urgentBadgeText}>확인</Text>
                     </TouchableOpacity>
                 </View>
             ))}
 
             {identityQueue.length > 0 && (
-                <View className="bg-amber-50 p-4 rounded-2xl mb-3 border border-amber-100 flex-row items-center">
+                <View style={styles.identityAlert}>
                     <Ionicons name="person-add" size={24} color="#d97706" />
-                    <View className="ml-3 flex-1">
-                        <Text className="text-amber-900 font-bold text-sm">신원 인증 대기 {identityQueue.length}건</Text>
-                        <Text className="text-amber-700 text-xs">관리자의 서류 검토가 필요합니다.</Text>
+                    <View style={styles.identityInfo}>
+                        <Text style={styles.identityAlertTitle}>신원 인증 대기 {identityQueue.length}건</Text>
+                        <Text style={styles.identityAlertSubtitle}>관리자의 서류 검토가 필요합니다.</Text>
                     </View>
-                    <TouchableOpacity onPress={() => setActiveTab('Approvals')} className="bg-white px-3 py-1.5 rounded-xl">
-                        <Text className="text-amber-600 text-xs font-bold">이동</Text>
+                    <TouchableOpacity onPress={() => setActiveTab('Approvals')} style={styles.identityBadge}>
+                        <Text style={styles.identityBadgeText}>이동</Text>
                     </TouchableOpacity>
                 </View>
             )}
@@ -183,6 +197,7 @@ const AdminDashboardScreen = ({ navigation }: any) => {
             keyExtractor={(item) => item.id.toString()}
             refreshing={refreshing}
             onRefresh={onRefresh}
+            contentContainerStyle={styles.listContent}
             renderItem={({ item }) => (
                 <TouchableOpacity
                     onLongPress={() => {
@@ -194,29 +209,41 @@ const AdminDashboardScreen = ({ navigation }: any) => {
                             toggleSelection(item.id);
                         }
                     }}
-                    className={`bg-white mx-4 p-4 rounded-3xl mb-3 border ${selectedIds.has(item.id) ? 'border-indigo-500 bg-indigo-50' : 'border-gray-100'}`}
+                    style={[
+                        styles.registrationCard,
+                        selectedIds.has(item.id) && styles.registrationCardSelected
+                    ]}
                 >
-                    <View className="flex-row justify-between mb-2">
-                        <View className="flex-row items-center">
+                    <View style={styles.cardHeaderRow}>
+                        <View style={styles.cardHeaderLeft}>
                             {selectionMode && (
-                                <View className={`w-5 h-5 rounded-full mr-2 items-center justify-center border ${selectedIds.has(item.id) ? 'bg-indigo-600 border-indigo-600' : 'border-gray-300'}`}>
+                                <View style={[
+                                    styles.checkbox,
+                                    selectedIds.has(item.id) && styles.checkboxActive
+                                ]}>
                                     {selectedIds.has(item.id) && <Ionicons name="checkmark" size={12} color="white" />}
                                 </View>
                             )}
-                            <Text className="text-indigo-600 font-bold text-xs">{item.category}</Text>
+                            <Text style={styles.categoryLabel}>{item.category}</Text>
                         </View>
-                        <Text className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${item.status === 'OPEN' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
-                            {item.status}
-                        </Text>
+                        <View style={[
+                            styles.statusLabelWrapper,
+                            item.status === 'OPEN' ? styles.statusOpen : styles.statusClosed
+                        ]}>
+                            <Text style={[
+                                styles.statusLabelText,
+                                item.status === 'OPEN' ? styles.statusOpenText : styles.statusClosedText
+                            ]}>{item.status}</Text>
+                        </View>
                     </View>
-                    <Text className="text-gray-800 font-bold text-base mb-1">{item.title}</Text>
-                    <Text className="text-gray-400 text-xs mb-3" numberOfLines={1}>{item.description}</Text>
-                    <View className="flex-row justify-between items-center">
-                        <View className="flex-row items-center">
+                    <Text style={styles.itemTitle}>{item.title}</Text>
+                    <Text style={styles.itemDescription} numberOfLines={1}>{item.description}</Text>
+                    <View style={styles.cardFooter}>
+                        <View style={styles.userRow}>
                             <Ionicons name="person-outline" size={12} color="#9ca3af" />
-                            <Text className="text-gray-500 text-xs ml-1">{item.user?.name}</Text>
+                            <Text style={styles.userNameText}>{item.user?.name}</Text>
                         </View>
-                        <Text className="text-gray-400 text-[10px]">{new Date(item.createdAt).toLocaleDateString()}</Text>
+                        <Text style={styles.dateText}>{new Date(item.createdAt).toLocaleDateString()}</Text>
                     </View>
                 </TouchableOpacity>
             )}
@@ -229,24 +256,31 @@ const AdminDashboardScreen = ({ navigation }: any) => {
             keyExtractor={(item) => item.id.toString()}
             refreshing={refreshing}
             onRefresh={onRefresh}
+            contentContainerStyle={styles.listContent}
             renderItem={({ item }) => (
-                <View className="bg-white mx-4 p-4 rounded-3xl mb-3 border border-gray-100 flex-row items-center">
-                    <View className={`w-10 h-10 rounded-full items-center justify-center ${item.type === 'REFUND' ? 'bg-rose-100' : 'bg-emerald-100'}`}>
+                <View style={styles.transactionCard}>
+                    <View style={[
+                        styles.transactionIconWrapper,
+                        item.type === 'REFUND' ? styles.iconRefund : styles.iconDeposit
+                    ]}>
                         <Ionicons
                             name={item.type === 'REFUND' ? 'arrow-undo' : 'card-outline'}
                             size={18}
                             color={item.type === 'REFUND' ? '#e11d48' : '#059669'}
                         />
                     </View>
-                    <View className="ml-3 flex-1">
-                        <Text className="text-gray-800 font-bold text-sm">{item.request?.title || '일반 거래'}</Text>
-                        <Text className="text-gray-400 text-[10px]">{item.user?.name} · {new Date(item.createdAt).toLocaleString()}</Text>
+                    <View style={styles.transactionDetails}>
+                        <Text style={styles.transactionTitle}>{item.request?.title || '일반 거래'}</Text>
+                        <Text style={styles.transactionMeta}>{item.user?.name} · {new Date(item.createdAt).toLocaleString()}</Text>
                     </View>
-                    <View className="items-end">
-                        <Text className={`font-bold ${item.type === 'REFUND' ? 'text-rose-600' : 'text-emerald-600'}`}>
+                    <View style={styles.transactionAmountWrapper}>
+                        <Text style={[
+                            styles.amountText,
+                            item.type === 'REFUND' ? styles.refundAmount : styles.depositAmount
+                        ]}>
                             {item.type === 'REFUND' ? '-' : '+'}{Number(item.amount).toLocaleString()}원
                         </Text>
-                        <Text className="text-gray-400 text-[10px]">{item.status}</Text>
+                        <Text style={styles.transactionStatusText}>{item.status}</Text>
                     </View>
                 </View>
             )}
@@ -259,21 +293,22 @@ const AdminDashboardScreen = ({ navigation }: any) => {
             keyExtractor={(item) => item.id.toString()}
             refreshing={refreshing}
             onRefresh={onRefresh}
+            contentContainerStyle={styles.listContent}
             renderItem={({ item }) => (
-                <View className="bg-white mx-4 p-4 rounded-3xl mb-3 border border-gray-100">
-                    <Text className="text-gray-800 font-bold text-base">{item.name}</Text>
-                    <Text className="text-gray-500 text-sm mb-4">{item.email} · {item.phone}</Text>
-                    <View className="flex-row">
+                <View style={styles.approvalCard}>
+                    <Text style={styles.approvalName}>{item.name}</Text>
+                    <Text style={styles.approvalMeta}>{item.email} · {item.phone}</Text>
+                    <View style={styles.actionRow}>
                         <TouchableOpacity
                             onPress={() => Alert.alert('승인', '사용자를 승인하시겠습니까?')}
-                            className="bg-indigo-600 px-4 py-2 rounded-xl flex-1 mr-2 items-center"
+                            style={styles.approveButton}
                         >
-                            <Text className="text-white font-bold text-xs">승인</Text>
+                            <Text style={styles.approveButtonText}>승인</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
-                            className="bg-gray-100 px-4 py-2 rounded-xl flex-1 items-center"
+                            style={styles.rejectButton}
                         >
-                            <Text className="text-gray-600 font-bold text-xs">거절</Text>
+                            <Text style={styles.rejectButtonText}>거절</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -287,21 +322,25 @@ const AdminDashboardScreen = ({ navigation }: any) => {
             keyExtractor={(item) => item.id.toString()}
             refreshing={refreshing}
             onRefresh={onRefresh}
+            contentContainerStyle={styles.listContent}
             renderItem={({ item }) => (
-                <View className="bg-white mx-4 p-4 rounded-3xl mb-3 border border-gray-100">
-                    <View className="flex-row justify-between mb-2">
-                        <View className="flex-row items-center">
-                            <View className={`w-2 h-2 rounded-full mr-2 ${item.priority === 'URGENT' ? 'bg-rose-500' : 'bg-indigo-400'}`} />
-                            <Text className="text-gray-400 font-bold text-[10px]">{item.priority}</Text>
+                <View style={styles.ticketCard}>
+                    <View style={styles.cardHeaderRow}>
+                        <View style={styles.priorityRow}>
+                            <View style={[
+                                styles.priorityDot,
+                                { backgroundColor: item.priority === 'URGENT' ? '#f43f5e' : '#818cf8' }
+                            ]} />
+                            <Text style={styles.priorityText}>{item.priority}</Text>
                         </View>
-                        <Text className="text-indigo-600 font-bold text-[10px]">{item.status}</Text>
+                        <Text style={styles.ticketStatusText}>{item.status}</Text>
                     </View>
-                    <Text className="text-gray-800 font-bold text-sm mb-1">{item.subject}</Text>
-                    <Text className="text-gray-500 text-xs mb-3" numberOfLines={2}>{item.content}</Text>
-                    <View className="flex-row justify-between items-center bg-gray-50 p-2 rounded-xl">
-                        <Text className="text-gray-500 text-[10px]">의뢰: {item.request?.title || '없음'}</Text>
+                    <Text style={styles.ticketSubject}>{item.subject}</Text>
+                    <Text style={styles.ticketContent} numberOfLines={2}>{item.content}</Text>
+                    <View style={styles.ticketFooter}>
+                        <Text style={styles.ticketRequestMeta}>의뢰: {item.request?.title || '없음'}</Text>
                         <TouchableOpacity>
-                            <Text className="text-indigo-600 font-bold text-[10px]">응대하기</Text>
+                            <Text style={styles.respondButtonText}>응대하기</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -349,61 +388,67 @@ const AdminDashboardScreen = ({ navigation }: any) => {
             keyExtractor={(item) => item.id.toString()}
             refreshing={refreshing}
             onRefresh={onRefresh}
+            contentContainerStyle={styles.listContent}
             renderItem={({ item }) => (
-                <View className="bg-white mx-4 p-5 rounded-3xl mb-4 border border-gray-100 shadow-sm">
-                    <View className="flex-row justify-between items-start mb-3">
-                        <View className="flex-1 mr-4">
-                            <Text className="text-gray-400 text-[10px] mb-1">의뢰: {item.request?.title}</Text>
-                            <Text className="text-gray-800 font-bold text-base mb-2">{item.description}</Text>
-                            <View className="flex-row items-center flex-wrap">
-                                <View className={`px-2 py-0.5 rounded-full mr-2 mb-1 ${item.verificationScore > 0.7 ? 'bg-emerald-100' : 'bg-amber-100'}`}>
-                                    <Text className={`text-[10px] font-bold ${item.verificationScore > 0.7 ? 'text-emerald-700' : 'text-amber-700'}`}>
+                <View style={styles.reportCard}>
+                    <View style={styles.reportTopRow}>
+                        <View style={styles.reportMainInfo}>
+                            <Text style={styles.reportRequestTitle}>의뢰: {item.request?.title}</Text>
+                            <Text style={styles.reportDescription}>{item.description}</Text>
+                            <View style={styles.scoreRow}>
+                                <View style={[
+                                    styles.scoreBadge,
+                                    item.verificationScore > 0.7 ? styles.scoreHigh : styles.scoreMid
+                                ]}>
+                                    <Text style={[
+                                        styles.scoreText,
+                                        item.verificationScore > 0.7 ? styles.scoreTextHigh : styles.scoreTextMid
+                                    ]}>
                                         종합 신뢰도: {(item.verificationScore * 100).toFixed(0)}%
                                     </Text>
                                 </View>
                                 {item.aiScore !== undefined && item.aiScore !== null && (
-                                    <View className="px-2 py-0.5 rounded-full mr-2 mb-1 bg-indigo-100">
-                                        <Text className="text-[10px] font-bold text-indigo-700">
+                                    <View style={styles.aiBadge}>
+                                        <Text style={styles.aiBadgeText}>
                                             AI 유사도: {(item.aiScore * 100).toFixed(0)}%
                                         </Text>
                                     </View>
                                 )}
-                                <Text className="text-gray-400 text-[10px] mb-1">{new Date(item.createdAt).toLocaleDateString()}</Text>
+                                <Text style={styles.reportDate}>{new Date(item.createdAt).toLocaleDateString()}</Text>
                             </View>
                         </View>
                         {item.images?.[0] && (
-                            <Image source={{ uri: item.images[0] }} className="w-16 h-16 rounded-xl bg-gray-50" />
+                            <Image source={{ uri: item.images[0] }} style={styles.reportThumbnail} />
                         )}
                     </View>
 
-                    {/* Metadata summary (EXIF) */}
-                    <View className="bg-gray-50 p-3 rounded-2xl mb-4 space-y-1">
-                        <Text className="text-[10px] text-gray-500">📍 위치: {item.latitude && item.longitude ? `${item.latitude.toFixed(4)}, ${item.longitude.toFixed(4)}` : '정보 없음'}</Text>
-                        <Text className="text-[10px] text-gray-500">⏰ 촬영: {item.capturedAt ? new Date(item.capturedAt).toLocaleString() : '정보 없음'}</Text>
+                    <View style={styles.exifBox}>
+                        <Text style={styles.exifText}>📍 위치: {item.latitude && item.longitude ? `${item.latitude.toFixed(4)}, ${item.longitude.toFixed(4)}` : '정보 없음'}</Text>
+                        <Text style={styles.exifText}>⏰ 촬영: {item.capturedAt ? new Date(item.capturedAt).toLocaleString() : '정보 없음'}</Text>
                     </View>
 
-                    <View className="flex-row">
+                    <View style={styles.actionRow}>
                         <TouchableOpacity
                             onPress={() => handleApproveReport(item.id)}
-                            className="bg-emerald-600 px-4 py-3 rounded-2xl flex-1 mr-2 items-center flex-row justify-center"
+                            style={styles.approveReportButton}
                         >
                             <Ionicons name="checkmark-circle" size={16} color="white" />
-                            <Text className="text-white font-bold text-xs ml-1">제보 승인</Text>
+                            <Text style={styles.approveReportButtonText}>제보 승인</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                             onPress={() => handleRejectReport(item.id)}
-                            className="bg-gray-100 px-4 py-3 rounded-2xl flex-1 items-center flex-row justify-center"
+                            style={styles.rejectReportButton}
                         >
                             <Ionicons name="close-circle" size={16} color="#4b5563" />
-                            <Text className="text-gray-600 font-bold text-xs ml-1">허위 제보 거절</Text>
+                            <Text style={styles.rejectReportButtonText}>허위 제보 거절</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
             )}
             ListEmptyComponent={() => (
-                <View className="flex-1 justify-center items-center p-10">
+                <View style={styles.emptyContainer}>
                     <Ionicons name="checkmark-done-circle-outline" size={64} color="#d1d5db" />
-                    <Text className="text-gray-400 mt-4 text-center">검토 대기 중인 제보가 없습니다.</Text>
+                    <Text style={styles.emptyText}>검토 대기 중인 제보가 없습니다.</Text>
                 </View>
             )}
         />
@@ -411,27 +456,27 @@ const AdminDashboardScreen = ({ navigation }: any) => {
 
     if (loading && !refreshing) {
         return (
-            <View className="flex-1 justify-center items-center bg-white">
+            <View style={styles.centerContainer}>
                 <ActivityIndicator size="large" color="#4f46e5" />
             </View>
         );
     }
 
     return (
-        <SafeAreaView className="flex-1 bg-gray-50">
+        <SafeAreaView style={styles.safeArea}>
             {/* Header */}
-            <View className="px-4 py-4 bg-white border-b border-gray-100 flex-row items-center justify-between">
+            <View style={styles.header}>
                 <View>
-                    <Text className="text-2xl font-bold text-gray-800">LookingAll</Text>
-                    <Text className="text-indigo-600 font-bold text-xs">Command Center 2.0</Text>
+                    <Text style={styles.headerBrand}>LookingAll</Text>
+                    <Text style={styles.headerSubtitle}>Command Center 2.0</Text>
                 </View>
-                <TouchableOpacity onPress={() => navigation.goBack()} className="w-10 h-10 bg-gray-100 rounded-full items-center justify-center">
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeHeaderButton}>
                     <Ionicons name="close" size={24} color="#4b5563" />
                 </TouchableOpacity>
             </View>
 
             {/* Tab Bar */}
-            <View className="flex-row bg-white px-2 border-b border-gray-100">
+            <View style={styles.tabBar}>
                 <TabButton tab="Dashboard" icon="analytics" label="홈" />
                 <TabButton tab="Registrations" icon="list" label="매물" />
                 <TabButton tab="Payments" icon="wallet" label="결제" />
@@ -441,7 +486,7 @@ const AdminDashboardScreen = ({ navigation }: any) => {
             </View>
 
             {/* Content Area */}
-            <View className="flex-1 pt-4">
+            <View style={styles.contentArea}>
                 {activeTab === 'Dashboard' && renderDashboard()}
                 {activeTab === 'Registrations' && renderRegistrations()}
                 {activeTab === 'Payments' && renderPayments()}
@@ -452,18 +497,598 @@ const AdminDashboardScreen = ({ navigation }: any) => {
 
             {/* Bulk Action Button */}
             {selectionMode && activeTab === 'Registrations' && selectedIds.size > 0 && (
-                <View className="absolute bottom-6 left-6 right-6">
+                <View style={styles.bulkActionWrapper}>
                     <TouchableOpacity
                         onPress={handleBulkDelete}
-                        className="bg-rose-500 py-4 rounded-2xl flex-row items-center justify-center shadow-lg shadow-rose-200"
+                        style={styles.bulkDeleteButton}
                     >
                         <Ionicons name="trash-outline" size={20} color="white" />
-                        <Text className="text-white font-bold text-lg ml-2">{selectedIds.size}개 일괄 삭제</Text>
+                        <Text style={styles.bulkDeleteText}>{selectedIds.size}개 일괄 삭제</Text>
                     </TouchableOpacity>
                 </View>
             )}
         </SafeAreaView>
     );
 };
+
+const styles = StyleSheet.create({
+    safeArea: {
+        flex: 1,
+        backgroundColor: '#f9fafb',
+    },
+    centerContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#ffffff',
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        backgroundColor: '#ffffff',
+        borderBottomWidth: 1,
+        borderBottomColor: '#f3f4f6',
+    },
+    headerBrand: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        color: '#111827',
+    },
+    headerSubtitle: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: '#4f46e5',
+    },
+    closeHeaderButton: {
+        width: 40,
+        height: 40,
+        backgroundColor: '#f3f4f6',
+        borderRadius: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    tabBar: {
+        flexDirection: 'row',
+        backgroundColor: '#ffffff',
+        paddingHorizontal: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f3f4f6',
+    },
+    tabButton: {
+        flex: 1,
+        alignItems: 'center',
+        paddingVertical: 12,
+    },
+    tabButtonActive: {
+        borderBottomWidth: 2,
+        borderBottomColor: '#4f46e5',
+    },
+    tabLabel: {
+        fontSize: 10,
+        marginTop: 4,
+        fontWeight: 'bold',
+        color: '#9ca3af',
+    },
+    tabLabelActive: {
+        color: '#4f46e5',
+    },
+    contentArea: {
+        flex: 1,
+        paddingTop: 16,
+    },
+    dashboardScroll: {
+        flex: 1,
+        paddingHorizontal: 16,
+    },
+    statRow: {
+        flexDirection: 'row',
+        marginBottom: 16,
+    },
+    statCard: {
+        backgroundColor: '#ffffff',
+        padding: 16,
+        borderRadius: 24,
+        borderWidth: 1,
+        borderColor: '#f1f5f9',
+        flex: 1,
+        marginHorizontal: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    statIconWrapper: {
+        width: 40,
+        height: 40,
+        borderRadius: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 8,
+    },
+    statTitle: {
+        color: '#94a3b8',
+        fontSize: 10,
+        marginBottom: 4,
+    },
+    statValue: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#1f2937',
+    },
+    sectionTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#111827',
+        marginBottom: 16,
+    },
+    urgentCard: {
+        backgroundColor: '#fef2f2',
+        padding: 16,
+        borderRadius: 16,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: '#fecaca',
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    urgentInfo: {
+        marginLeft: 12,
+        flex: 1,
+    },
+    urgentSubject: {
+        color: '#991b1b',
+        fontWeight: 'bold',
+        fontSize: 14,
+    },
+    urgentMeta: {
+        color: '#b91c1c',
+        fontSize: 12,
+    },
+    urgentBadge: {
+        backgroundColor: '#ffffff',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 12,
+    },
+    urgentBadgeText: {
+        color: '#e11d48',
+        fontSize: 12,
+        fontWeight: 'bold',
+    },
+    identityAlert: {
+        backgroundColor: '#fffbeb',
+        padding: 16,
+        borderRadius: 16,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: '#fef3c7',
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    identityInfo: {
+        marginLeft: 12,
+        flex: 1,
+    },
+    identityAlertTitle: {
+        color: '#92400e',
+        fontWeight: 'bold',
+        fontSize: 14,
+    },
+    identityAlertSubtitle: {
+        color: '#b45309',
+        fontSize: 12,
+    },
+    identityBadge: {
+        backgroundColor: '#ffffff',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 12,
+    },
+    identityBadgeText: {
+        color: '#d97706',
+        fontSize: 12,
+        fontWeight: 'bold',
+    },
+    listContent: {
+        paddingBottom: 100,
+    },
+    registrationCard: {
+        backgroundColor: '#ffffff',
+        marginHorizontal: 16,
+        padding: 16,
+        borderRadius: 24,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: '#f1f5f9',
+    },
+    registrationCardSelected: {
+        borderColor: '#6366f1',
+        backgroundColor: '#f5f7ff',
+    },
+    cardHeaderRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 8,
+    },
+    cardHeaderLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    checkbox: {
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        marginRight: 8,
+        borderWidth: 1,
+        borderColor: '#d1d5db',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    checkboxActive: {
+        backgroundColor: '#4f46e5',
+        borderColor: '#4f46e5',
+    },
+    categoryLabel: {
+        color: '#4f46e5',
+        fontWeight: 'bold',
+        fontSize: 12,
+    },
+    statusLabelWrapper: {
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 10,
+    },
+    statusOpen: { backgroundColor: '#dcfce7' },
+    statusClosed: { backgroundColor: '#f3f4f6' },
+    statusLabelText: {
+        fontSize: 10,
+        fontWeight: 'bold',
+    },
+    statusOpenText: { color: '#15803d' },
+    statusClosedText: { color: '#6b7280' },
+    itemTitle: {
+        color: '#1f2937',
+        fontWeight: 'bold',
+        fontSize: 16,
+        marginBottom: 4,
+    },
+    itemDescription: {
+        color: '#94a3b8',
+        fontSize: 12,
+        marginBottom: 12,
+    },
+    cardFooter: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    userRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    userNameText: {
+        color: '#6b7280',
+        fontSize: 12,
+        marginLeft: 4,
+    },
+    dateText: {
+        color: '#9ca3af',
+        fontSize: 10,
+    },
+    transactionCard: {
+        backgroundColor: '#ffffff',
+        marginHorizontal: 16,
+        padding: 16,
+        borderRadius: 24,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: '#f1f5f9',
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    transactionIconWrapper: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    iconDeposit: { backgroundColor: '#dcfce7' },
+    iconRefund: { backgroundColor: '#fef2f2' },
+    transactionDetails: {
+        marginLeft: 12,
+        flex: 1,
+    },
+    transactionTitle: {
+        color: '#1f2937',
+        fontWeight: 'bold',
+        fontSize: 14,
+    },
+    transactionMeta: {
+        color: '#94a3b8',
+        fontSize: 10,
+    },
+    transactionAmountWrapper: {
+        alignItems: 'flex-end',
+    },
+    amountText: {
+        fontWeight: 'bold',
+    },
+    depositAmount: { color: '#059669' },
+    refundAmount: { color: '#e11d48' },
+    transactionStatusText: {
+        color: '#9ca3af',
+        fontSize: 10,
+    },
+    approvalCard: {
+        backgroundColor: '#ffffff',
+        marginHorizontal: 16,
+        padding: 16,
+        borderRadius: 24,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: '#f1f5f9',
+    },
+    approvalName: {
+        color: '#1f2937',
+        fontWeight: 'bold',
+        fontSize: 16,
+    },
+    approvalMeta: {
+        color: '#6b7280',
+        fontSize: 14,
+        marginBottom: 16,
+    },
+    actionRow: {
+        flexDirection: 'row',
+    },
+    approveButton: {
+        backgroundColor: '#4f46e5',
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 12,
+        flex: 1,
+        marginRight: 8,
+        alignItems: 'center',
+    },
+    approveButtonText: {
+        color: '#ffffff',
+        fontWeight: 'bold',
+        fontSize: 12,
+    },
+    rejectButton: {
+        backgroundColor: '#f3f4f6',
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 12,
+        flex: 1,
+        alignItems: 'center',
+    },
+    rejectButtonText: {
+        color: '#4b5563',
+        fontWeight: 'bold',
+        fontSize: 12,
+    },
+    ticketCard: {
+        backgroundColor: '#ffffff',
+        marginHorizontal: 16,
+        padding: 16,
+        borderRadius: 24,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: '#f1f5f9',
+    },
+    priorityRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    priorityDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        marginRight: 8,
+    },
+    priorityText: {
+        color: '#94a3b8',
+        fontWeight: 'bold',
+        fontSize: 10,
+    },
+    ticketStatusText: {
+        color: '#4f46e5',
+        fontWeight: 'bold',
+        fontSize: 10,
+    },
+    ticketSubject: {
+        color: '#1f2937',
+        fontWeight: 'bold',
+        fontSize: 14,
+        marginBottom: 4,
+    },
+    ticketContent: {
+        color: '#6b7280',
+        fontSize: 12,
+        marginBottom: 12,
+    },
+    ticketFooter: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        backgroundColor: '#f9fafb',
+        padding: 8,
+        borderRadius: 12,
+    },
+    ticketRequestMeta: {
+        color: '#6b7280',
+        fontSize: 10,
+    },
+    respondButtonText: {
+        color: '#4f46e5',
+        fontWeight: 'bold',
+        fontSize: 10,
+    },
+    reportCard: {
+        backgroundColor: '#ffffff',
+        marginHorizontal: 16,
+        padding: 20,
+        borderRadius: 24,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: '#f1f5f9',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    reportTopRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        marginBottom: 12,
+    },
+    reportMainInfo: {
+        flex: 1,
+        marginRight: 16,
+    },
+    reportRequestTitle: {
+        color: '#94a3b8',
+        fontSize: 10,
+        marginBottom: 4,
+    },
+    reportDescription: {
+        color: '#1f2937',
+        fontWeight: 'bold',
+        fontSize: 16,
+        marginBottom: 8,
+    },
+    scoreRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+    },
+    scoreBadge: {
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 10,
+        marginRight: 8,
+        marginBottom: 4,
+    },
+    scoreHigh: { backgroundColor: '#d1fae5' },
+    scoreMid: { backgroundColor: '#fef3c7' },
+    scoreText: {
+        fontSize: 10,
+        fontWeight: 'bold',
+    },
+    scoreTextHigh: { color: '#065f46' },
+    scoreTextMid: { color: '#92400e' },
+    aiBadge: {
+        backgroundColor: '#e0e7ff',
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 10,
+        marginRight: 8,
+        marginBottom: 4,
+    },
+    aiBadgeText: {
+        color: '#3730a3',
+        fontSize: 10,
+        fontWeight: 'bold',
+    },
+    reportDate: {
+        color: '#9ca3af',
+        fontSize: 10,
+        marginBottom: 4,
+    },
+    reportThumbnail: {
+        width: 64,
+        height: 64,
+        borderRadius: 12,
+        backgroundColor: '#f3f4f6',
+    },
+    exifBox: {
+        backgroundColor: '#f8fafc',
+        padding: 12,
+        borderRadius: 16,
+        marginBottom: 16,
+    },
+    exifText: {
+        fontSize: 10,
+        color: '#64748b',
+        marginBottom: 2,
+    },
+    approveReportButton: {
+        backgroundColor: '#059669',
+        paddingVertical: 12,
+        borderRadius: 16,
+        flex: 1,
+        marginRight: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    approveReportButtonText: {
+        color: '#ffffff',
+        fontWeight: 'bold',
+        fontSize: 12,
+        marginLeft: 4,
+    },
+    rejectReportButton: {
+        backgroundColor: '#f3f4f6',
+        paddingVertical: 12,
+        borderRadius: 16,
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    rejectReportButtonText: {
+        color: '#4b5563',
+        fontWeight: 'bold',
+        fontSize: 12,
+        marginLeft: 4,
+    },
+    emptyContainer: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 40,
+        marginTop: 60,
+    },
+    emptyText: {
+        color: '#94a3b8',
+        marginTop: 16,
+        textAlign: 'center',
+        fontSize: 16,
+    },
+    bulkActionWrapper: {
+        position: 'absolute',
+        bottom: 24,
+        left: 24,
+        right: 24,
+    },
+    bulkDeleteButton: {
+        backgroundColor: '#f43f5e',
+        paddingVertical: 16,
+        borderRadius: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#f43f5e',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    bulkDeleteText: {
+        color: '#ffffff',
+        fontWeight: 'bold',
+        fontSize: 18,
+        marginLeft: 8,
+    },
+});
 
 export default AdminDashboardScreen;

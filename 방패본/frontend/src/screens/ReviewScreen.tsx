@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../utils/api';
@@ -31,42 +31,107 @@ export default function ReviewScreen({ route, navigation }: any) {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-white">
-            <ScrollView className="p-6">
-                <Text className="text-2xl font-bold text-gray-900 mb-2">Leave a Review</Text>
-                <Text className="text-gray-500 mb-8">How was your experience with {targetUserName}?</Text>
+        <SafeAreaView style={styles.safeArea}>
+            <ScrollView contentContainerStyle={styles.scrollContent}>
+                <Text style={styles.title}>Leave a Review</Text>
+                <Text style={styles.subtitle}>How was your experience with {targetUserName}?</Text>
 
-                <View className="flex-row justify-center mb-8">
+                <View style={styles.starRow}>
                     {[1, 2, 3, 4, 5].map((star) => (
-                        <TouchableOpacity key={star} onPress={() => setRating(star)}>
+                        <TouchableOpacity key={star} onPress={() => setRating(star)} activeOpacity={0.7}>
                             <Ionicons
                                 name={star <= rating ? "star" : "star-outline"}
                                 size={48}
                                 color={star <= rating ? "#f59e0b" : "#d1d5db"}
-                                style={{ marginHorizontal: 4 }}
+                                style={styles.starIcon}
                             />
                         </TouchableOpacity>
                     ))}
                 </View>
 
-                <Text className="text-lg font-semibold text-gray-800 mb-2">Detailed Feedback</Text>
+                <Text style={styles.label}>Detailed Feedback</Text>
                 <TextInput
-                    className="bg-gray-50 border border-gray-200 rounded-xl p-4 min-h-[150] text-gray-800"
+                    style={styles.textInput}
                     placeholder="Tell us what went well or could be improved..."
                     multiline
                     textAlignVertical="top"
                     value={content}
                     onChangeText={setContent}
+                    placeholderTextColor="#94a3b8"
                 />
 
                 <TouchableOpacity
-                    className={`mt-8 py-4 rounded-xl items-center ${submitting ? 'bg-gray-400' : 'bg-blue-600'}`}
+                    style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
                     onPress={handleSubmit}
                     disabled={submitting}
                 >
-                    <Text className="text-white font-bold text-lg">Submit Review</Text>
+                    <Text style={styles.submitButtonText}>Submit Review</Text>
                 </TouchableOpacity>
             </ScrollView>
         </SafeAreaView>
     );
 }
+
+const styles = StyleSheet.create({
+    safeArea: {
+        flex: 1,
+        backgroundColor: '#ffffff',
+    },
+    scrollContent: {
+        padding: 24,
+    },
+    title: {
+        fontSize: 28,
+        fontWeight: 'bold',
+        color: '#111827',
+        marginBottom: 8,
+    },
+    subtitle: {
+        fontSize: 16,
+        color: '#6b7280',
+        marginBottom: 32,
+    },
+    starRow: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        marginBottom: 40,
+    },
+    starIcon: {
+        marginHorizontal: 4,
+    },
+    label: {
+        fontSize: 18,
+        fontWeight: 'semibold',
+        color: '#1f2937',
+        marginBottom: 12,
+    },
+    textInput: {
+        backgroundColor: '#f9fafb',
+        borderWidth: 1,
+        borderColor: '#e5e7eb',
+        borderRadius: 16,
+        padding: 16,
+        minHeight: 180,
+        fontSize: 16,
+        color: '#111827',
+    },
+    submitButton: {
+        marginTop: 32,
+        backgroundColor: '#2563eb',
+        paddingVertical: 16,
+        borderRadius: 12,
+        alignItems: 'center',
+        shadowColor: '#2563eb',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+    },
+    submitButtonDisabled: {
+        backgroundColor: '#94a3b8',
+    },
+    submitButtonText: {
+        color: '#ffffff',
+        fontWeight: 'bold',
+        fontSize: 18,
+    },
+});

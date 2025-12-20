@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Modal, Image, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Modal, Image, Platform, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import MapView, { Marker, PROVIDER_GOOGLE } from '../components/NativeMap';
@@ -184,60 +184,63 @@ export default function CreateRequestScreen({ navigation }: any) {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-white">
-            <View className="flex-row items-center p-4 border-b border-gray-100 bg-white shadow-sm z-10">
-                <TouchableOpacity onPress={() => navigation.goBack()}>
+        <SafeAreaView style={styles.safeArea}>
+            <View style={styles.headerBar}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeHeaderButton}>
                     <Ionicons name="close" size={24} color="black" />
                 </TouchableOpacity>
-                <Text className="text-lg font-bold ml-4 text-blue-800">의뢰하기 (분실물 등록)</Text>
+                <Text style={styles.headerTitle}>의뢰하기 (분실물 등록)</Text>
             </View>
 
-            <ScrollView className="flex-1 bg-gray-50">
+            <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
                 {/* Hero */}
-                <View className="bg-blue-600 p-6 pb-8">
-                    <Text className="text-white text-xl font-bold mb-2">"소중한 물건을 찾기 위한 첫 걸음,{'\n'}LookingAll이 함께합니다."</Text>
-                    <Text className="text-blue-100 text-sm">보상 설정 금액에 따라 최소 예치금만으로 의뢰가 가능합니다.</Text>
+                <View style={styles.hero}>
+                    <Text style={styles.heroTitle}>"소중한 물건을 찾기 위한 첫 걸음,{"\n"}LookingAll이 함께합니다."</Text>
+                    <Text style={styles.heroSubtitle}>보상 설정 금액에 따라 최소 예치금만으로 의뢰가 가능합니다.</Text>
                 </View>
 
-                <View className="p-4 -mt-6">
-                    <View className="bg-white rounded-xl p-5 shadow-md space-y-6">
+                <View style={styles.formContainer}>
+                    <View style={styles.formCard}>
 
                         {/* Title */}
-                        <View>
-                            <Text className="text-gray-600 mb-2 font-bold text-base">물건 정보 (제목)</Text>
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.inputLabel}>물건 정보 (제목)</Text>
                             <TextInput
-                                className="bg-gray-50 p-4 rounded-xl border border-gray-200 text-lg"
+                                style={styles.textInput}
                                 placeholder="예) 아이폰 15 프로 맥스"
                                 value={title}
                                 onChangeText={setTitle}
+                                placeholderTextColor="#9ca3af"
                             />
                         </View>
 
                         {/* Description */}
-                        <View>
-                            <Text className="text-gray-600 mb-2 font-bold text-base">상세 설명</Text>
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.inputLabel}>상세 설명</Text>
                             <TextInput
-                                className="bg-gray-50 p-4 rounded-xl border border-gray-200 h-32 text-base"
+                                style={[styles.textInput, styles.textArea]}
                                 placeholder="물건의 색상, 케이스 유무, 잃어버린 상황 등을 상세히 적어주세요."
                                 multiline
                                 textAlignVertical="top"
                                 value={description}
                                 onChangeText={setDescription}
+                                placeholderTextColor="#9ca3af"
                             />
                         </View>
 
                         {/* Location */}
-                        <View>
-                            <Text className="text-gray-600 mb-2 font-bold text-base">분실 장소</Text>
-                            <View className="flex-row gap-2">
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.inputLabel}>분실 장소</Text>
+                            <View style={styles.row}>
                                 <TextInput
-                                    className="flex-1 bg-gray-50 p-4 rounded-xl border border-gray-200 text-base"
+                                    style={[styles.textInput, { flex: 1, marginRight: 8 }]}
                                     placeholder="분실 장소를 입력하거나 지도에서 선택하세요"
                                     value={locationName}
                                     onChangeText={setLocationName}
+                                    placeholderTextColor="#9ca3af"
                                 />
                                 <TouchableOpacity
-                                    className="bg-blue-100 p-4 rounded-xl justify-center items-center border border-blue-200"
+                                    style={styles.mapIconButton}
                                     onPress={() => setShowMap(true)}
                                 >
                                     <Ionicons name="map" size={24} color="#2563eb" />
@@ -246,71 +249,69 @@ export default function CreateRequestScreen({ navigation }: any) {
                         </View>
 
                         {/* Date & Time Picker UI */}
-                        <View>
-                            <Text className="text-gray-600 mb-2 font-bold text-base">분실 일시</Text>
-                            <View className="flex-row gap-2">
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.inputLabel}>분실 일시</Text>
+                            <View style={styles.row}>
                                 <TouchableOpacity
-                                    className="flex-1 bg-gray-50 p-4 rounded-xl border border-gray-200 items-center justify-between flex-row"
+                                    style={[styles.pickerButton, { marginRight: 8 }]}
                                     onPress={() => setShowDatePicker(true)}
                                 >
-                                    <Text className="text-gray-800">{`${selectedYear}.${selectedMonth}.${selectedDay}`}</Text>
+                                    <Text style={styles.pickerText}>{`${selectedYear}.${selectedMonth}.${selectedDay}`}</Text>
                                     <Ionicons name="calendar-outline" size={20} color="#6b7280" />
                                 </TouchableOpacity>
                                 <TouchableOpacity
-                                    className="flex-1 bg-gray-50 p-4 rounded-xl border border-gray-200 items-center justify-between flex-row"
+                                    style={styles.pickerButton}
                                     onPress={() => setShowTimePicker(true)}
                                 >
-                                    <Text className="text-gray-800">{`${String(selectedHour).padStart(2, '0')}:${String(selectedMinute).padStart(2, '0')}`}</Text>
+                                    <Text style={styles.pickerText}>{`${String(selectedHour).padStart(2, '0')}:${String(selectedMinute).padStart(2, '0')}`}</Text>
                                     <Ionicons name="time-outline" size={20} color="#6b7280" />
                                 </TouchableOpacity>
                             </View>
                         </View>
 
                         {/* Reward */}
-                        <View>
-                            <Text className="text-gray-600 mb-2 font-bold text-base">보상 설정 (사례금)</Text>
-                            <View className="relative">
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.inputLabel}>보상 설정 (사례금)</Text>
+                            <View style={styles.rewardInputContainer}>
                                 <TextInput
-                                    className="bg-gray-50 p-4 rounded-xl border border-gray-200 text-lg font-bold text-blue-600 pr-10"
+                                    style={styles.rewardInput}
                                     placeholder="금액 입력 (최대 1,000만원)"
                                     keyboardType="numeric"
                                     value={formatCurrency(reward)}
                                     onChangeText={handleRewardChange}
+                                    placeholderTextColor="#9ca3af"
                                 />
-                                <Text className="absolute right-4 top-5 text-gray-500 font-bold">원</Text>
+                                <Text style={styles.rewardUnit}>원</Text>
                             </View>
-                            <View className="mt-2 flex-row justify-between items-center bg-blue-50 p-3 rounded-lg border border-blue-100">
-                                <Text className="text-blue-800 text-xs font-bold">실 입금액(예치금):</Text>
-                                <Text className="text-blue-600 font-bold text-sm">
+                            <View style={styles.depositInfoBox}>
+                                <Text style={styles.depositLabel}>실 입금액(예치금):</Text>
+                                <Text style={styles.depositValue}>
                                     {formatCurrency(calculateDeposit(Number(reward)).toString())}원
                                 </Text>
                             </View>
-                            <Text className="text-[10px] text-gray-400 mt-1">
+                            <Text style={styles.policyText}>
                                 * 10만원 이하 100% / 10만원 초과 시 10% 선입금 정책이 적용됩니다.
                             </Text>
                         </View>
 
                         {/* Images */}
-                        <View>
-                            <View className="flex-row justify-between mb-2">
-                                <Text className="text-gray-600 font-bold text-base">사진 첨부 ({selectedImages.length}/5)</Text>
-                            </View>
-
-                            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.inputLabel}>사진 첨부 ({selectedImages.length}/5)</Text>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imageScroll}>
                                 {selectedImages.length < 5 && (
                                     <TouchableOpacity
                                         onPress={pickImages}
-                                        className="w-24 h-24 bg-gray-50 rounded-lg border border-dashed border-blue-300 items-center justify-center mr-2"
+                                        style={styles.addImageButton}
                                     >
                                         <Ionicons name="camera" size={24} color="#2563eb" />
-                                        <Text className="text-blue-600 text-xs font-bold mt-1">추가하기</Text>
+                                        <Text style={styles.addImageText}>추가하기</Text>
                                     </TouchableOpacity>
                                 )}
                                 {selectedImages.map((uri, index) => (
-                                    <View key={index} className="relative mr-2">
-                                        <Image source={{ uri }} className="w-24 h-24 rounded-lg bg-gray-100" />
+                                    <View key={index} style={styles.imageWrapper}>
+                                        <Image source={{ uri }} style={styles.imageItem} />
                                         <TouchableOpacity
-                                            className="absolute -top-2 -right-2 bg-red-500 rounded-full w-6 h-6 items-center justify-center border-2 border-white shadow-sm"
+                                            style={styles.removeImageButton}
                                             onPress={() => removeImage(index)}
                                         >
                                             <Ionicons name="close" size={14} color="white" />
@@ -322,23 +323,23 @@ export default function CreateRequestScreen({ navigation }: any) {
 
                         {/* Submit */}
                         <TouchableOpacity
-                            className={`bg-blue-600 p-4 rounded-xl items-center shadow-lg mt-4 ${loading ? 'opacity-50' : ''}`}
+                            style={[styles.submitButton, loading && styles.disabledButton]}
                             onPress={handleSubmit}
                             disabled={loading}
                         >
-                            <Text className="text-white font-bold text-lg">{loading ? '의뢰 등록 중...' : '의뢰 및 보상금 예치하기'}</Text>
+                            <Text style={styles.submitButtonText}>{loading ? '의뢰 등록 중...' : '의뢰 및 보상금 예치하기'}</Text>
                         </TouchableOpacity>
                     </View>
 
                     {/* Footer Info */}
-                    <View className="mt-8 mb-10 space-y-4 px-2">
-                        <View className="flex-row items-start">
-                            <Ionicons name="notifications-outline" size={20} color="#4b5563" className="mt-1 mr-2" />
-                            <Text className="text-gray-500 flex-1 text-sm">제보가 등록되면 의뢰인에게 실시간으로 알림이 전송됩니다.</Text>
+                    <View style={styles.footerInfo}>
+                        <View style={styles.footerRow}>
+                            <Ionicons name="notifications-outline" size={20} color="#4b5563" style={styles.footerIcon} />
+                            <Text style={styles.footerText}>제보가 등록되면 의뢰인에게 실시간으로 알림이 전송됩니다.</Text>
                         </View>
-                        <View className="flex-row items-start">
-                            <Ionicons name="chatbubbles-outline" size={20} color="#4b5563" className="mt-1 mr-2" />
-                            <Text className="text-gray-500 flex-1 text-sm">LookingAll 안심 채팅으로 안전하게 대화하세요.</Text>
+                        <View style={styles.footerRow}>
+                            <Ionicons name="chatbubbles-outline" size={20} color="#4b5563" style={styles.footerIcon} />
+                            <Text style={styles.footerText}>LookingAll 안심 채팅으로 안전하게 대화하세요.</Text>
                         </View>
                     </View>
                 </View>
@@ -346,34 +347,34 @@ export default function CreateRequestScreen({ navigation }: any) {
 
             {/* Date Picker Modal */}
             <Modal visible={showDatePicker} transparent animationType="fade">
-                <View className="flex-1 justify-center items-center bg-black/50 p-4">
-                    <View className="bg-white w-full rounded-2xl p-6">
-                        <Text className="text-xl font-bold mb-6 text-center text-gray-800">날짜 선택</Text>
-                        <View className="flex-row justify-around mb-6">
-                            <ScrollView className="h-40 w-1/3">
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>날짜 선택</Text>
+                        <View style={styles.wheelContainer}>
+                            <ScrollView style={styles.wheelColumn}>
                                 {[2024, 2025, 2026].map(y => (
-                                    <TouchableOpacity key={y} onPress={() => setSelectedYear(y)} className={`p-3 items-center rounded-lg mb-1 ${selectedYear === y ? 'bg-blue-100' : ''}`}>
-                                        <Text className={`text-lg ${selectedYear === y ? 'text-blue-600 font-bold' : 'text-gray-400'}`}>{y}년</Text>
+                                    <TouchableOpacity key={y} onPress={() => setSelectedYear(y)} style={[styles.wheelItem, selectedYear === y && styles.activeWheelItem]}>
+                                        <Text style={[styles.wheelText, selectedYear === y && styles.activeWheelText]}>{y}년</Text>
                                     </TouchableOpacity>
                                 ))}
                             </ScrollView>
-                            <ScrollView className="h-40 w-1/4">
+                            <ScrollView style={styles.wheelColumn}>
                                 {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
-                                    <TouchableOpacity key={m} onPress={() => setSelectedMonth(m)} className={`p-3 items-center rounded-lg mb-1 ${selectedMonth === m ? 'bg-blue-100' : ''}`}>
-                                        <Text className={`text-lg ${selectedMonth === m ? 'text-blue-600 font-bold' : 'text-gray-400'}`}>{m}월</Text>
+                                    <TouchableOpacity key={m} onPress={() => setSelectedMonth(m)} style={[styles.wheelItem, selectedMonth === m && styles.activeWheelItem]}>
+                                        <Text style={[styles.wheelText, selectedMonth === m && styles.activeWheelText]}>{m}월</Text>
                                     </TouchableOpacity>
                                 ))}
                             </ScrollView>
-                            <ScrollView className="h-40 w-1/4">
+                            <ScrollView style={styles.wheelColumn}>
                                 {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
-                                    <TouchableOpacity key={d} onPress={() => setSelectedDay(d)} className={`p-3 items-center rounded-lg mb-1 ${selectedDay === d ? 'bg-blue-100' : ''}`}>
-                                        <Text className={`text-lg ${selectedDay === d ? 'text-blue-600 font-bold' : 'text-gray-400'}`}>{d}일</Text>
+                                    <TouchableOpacity key={d} onPress={() => setSelectedDay(d)} style={[styles.wheelItem, selectedDay === d && styles.activeWheelItem]}>
+                                        <Text style={[styles.wheelText, selectedDay === d && styles.activeWheelText]}>{d}일</Text>
                                     </TouchableOpacity>
                                 ))}
                             </ScrollView>
                         </View>
-                        <TouchableOpacity className="bg-blue-600 p-4 rounded-xl items-center" onPress={() => setShowDatePicker(false)}>
-                            <Text className="text-white font-bold text-lg">확인</Text>
+                        <TouchableOpacity style={styles.modalConfirmButton} onPress={() => setShowDatePicker(false)}>
+                            <Text style={styles.modalConfirmText}>확인</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -381,27 +382,27 @@ export default function CreateRequestScreen({ navigation }: any) {
 
             {/* Time Picker Modal */}
             <Modal visible={showTimePicker} transparent animationType="fade">
-                <View className="flex-1 justify-center items-center bg-black/50 p-4">
-                    <View className="bg-white w-full rounded-2xl p-6">
-                        <Text className="text-xl font-bold mb-6 text-center text-gray-800">시간 선택</Text>
-                        <View className="flex-row justify-around mb-6">
-                            <ScrollView className="h-40 w-1/3">
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>시간 선택</Text>
+                        <View style={styles.wheelContainer}>
+                            <ScrollView style={styles.wheelColumn}>
                                 {Array.from({ length: 24 }, (_, i) => i).map(h => (
-                                    <TouchableOpacity key={h} onPress={() => setSelectedHour(h)} className={`p-3 items-center rounded-lg mb-1 ${selectedHour === h ? 'bg-blue-100' : ''}`}>
-                                        <Text className={`text-lg ${selectedHour === h ? 'text-blue-600 font-bold' : 'text-gray-400'}`}>{String(h).padStart(2, '0')}시</Text>
+                                    <TouchableOpacity key={h} onPress={() => setSelectedHour(h)} style={[styles.wheelItem, selectedHour === h && styles.activeWheelItem]}>
+                                        <Text style={[styles.wheelText, selectedHour === h && styles.activeWheelText]}>{String(h).padStart(2, '0')}시</Text>
                                     </TouchableOpacity>
                                 ))}
                             </ScrollView>
-                            <ScrollView className="h-40 w-1/3">
+                            <ScrollView style={styles.wheelColumn}>
                                 {Array.from({ length: 12 }, (_, i) => i * 5).map(m => (
-                                    <TouchableOpacity key={m} onPress={() => setSelectedMinute(m)} className={`p-3 items-center rounded-lg mb-1 ${selectedMinute === m ? 'bg-blue-100' : ''}`}>
-                                        <Text className={`text-lg ${selectedMinute === m ? 'text-blue-600 font-bold' : 'text-gray-400'}`}>{String(m).padStart(2, '0')}분</Text>
+                                    <TouchableOpacity key={m} onPress={() => setSelectedMinute(m)} style={[styles.wheelItem, selectedMinute === m && styles.activeWheelItem]}>
+                                        <Text style={[styles.wheelText, selectedMinute === m && styles.activeWheelText]}>{String(m).padStart(2, '0')}분</Text>
                                     </TouchableOpacity>
                                 ))}
                             </ScrollView>
                         </View>
-                        <TouchableOpacity className="bg-blue-600 p-4 rounded-xl items-center" onPress={() => setShowTimePicker(false)}>
-                            <Text className="text-white font-bold text-lg">확인</Text>
+                        <TouchableOpacity style={styles.modalConfirmButton} onPress={() => setShowTimePicker(false)}>
+                            <Text style={styles.modalConfirmText}>확인</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -409,50 +410,50 @@ export default function CreateRequestScreen({ navigation }: any) {
 
             {/* Deposit Modal */}
             <Modal visible={showDepositModal} transparent animationType="slide">
-                <View className="flex-1 justify-end bg-black/50">
-                    <View className="bg-white rounded-t-3xl p-6 pb-12">
-                        <View className="flex-row justify-between items-center mb-6">
-                            <Text className="text-xl font-bold text-gray-800">보상금 예치 안내</Text>
+                <View style={[styles.modalOverlay, { justifyContent: 'flex-end' }]}>
+                    <View style={styles.bottomSheetContent}>
+                        <View style={styles.bottomSheetHeader}>
+                            <Text style={styles.bottomSheetTitle}>보상금 예치 안내</Text>
                             <TouchableOpacity onPress={() => setShowDepositModal(false)}>
                                 <Ionicons name="close" size={24} color="black" />
                             </TouchableOpacity>
                         </View>
 
-                        <View className="bg-blue-50 p-4 rounded-xl mb-6">
-                            <Text className="text-blue-800 font-bold text-lg mb-1 text-center">
+                        <View style={styles.depositSummaryBox}>
+                            <Text style={styles.depositSummaryTitle}>
                                 총 예치 금액: {formatCurrency(calculateDeposit(Number(reward)).toString())}원
                             </Text>
-                            <Text className="text-blue-500 text-xs text-center font-bold">
+                            <Text style={styles.depositSummarySubtitle}>
                                 (설정 보상금: {formatCurrency(reward)}원의 {Number(reward) <= 100000 ? '100%' : '10%'})
                             </Text>
                         </View>
 
-                        <View className="space-y-4 mb-8">
-                            <View className="flex-row justify-between border-b border-gray-100 py-3">
-                                <Text className="text-gray-500">입금 은행</Text>
-                                <Text className="font-bold text-gray-800">신한은행</Text>
+                        <View style={styles.bankInfoContainer}>
+                            <View style={styles.bankInfoRow}>
+                                <Text style={styles.bankInfoLabel}>입금 은행</Text>
+                                <Text style={styles.bankInfoValue}>신한은행</Text>
                             </View>
-                            <View className="flex-row justify-between border-b border-gray-100 py-3">
-                                <Text className="text-gray-500">계좌 번호</Text>
-                                <Text className="font-bold text-gray-800">110-123-456789</Text>
+                            <View style={styles.bankInfoRow}>
+                                <Text style={styles.bankInfoLabel}>계좌 번호</Text>
+                                <Text style={styles.bankInfoValue}>110-123-456789</Text>
                             </View>
-                            <View className="flex-row justify-between border-b border-gray-100 py-3">
-                                <Text className="text-gray-500">예금주</Text>
-                                <Text className="font-bold text-gray-800">(주)루킹올</Text>
+                            <View style={styles.bankInfoRow}>
+                                <Text style={styles.bankInfoLabel}>예금주</Text>
+                                <Text style={styles.bankInfoValue}>(주)루킹올</Text>
                             </View>
                         </View>
 
-                        <Text className="text-xs text-gray-400 mb-6 text-center">
+                        <Text style={styles.bankInfoNote}>
                             * 입급 확인 후 관리자 승인 절차를 거쳐 의뢰가 활성화됩니다.{"\n"}
                             * 승인 전에는 목록에 노출되지 않으며, 영업일 기준 1시간 내 처리됩니다.
                         </Text>
 
                         <TouchableOpacity
-                            className={`bg-blue-600 p-4 rounded-xl items-center shadow-lg ${loading ? 'opacity-50' : ''}`}
+                            style={[styles.submitButton, loading && styles.disabledButton]}
                             onPress={handleConfirmDeposit}
                             disabled={loading}
                         >
-                            <Text className="text-white font-bold text-lg">{loading ? '처리 중...' : '입금 완료 및 의뢰 등록'}</Text>
+                            <Text style={styles.submitButtonText}>{loading ? '처리 중...' : '입금 완료 및 의뢰 등록'}</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -460,35 +461,36 @@ export default function CreateRequestScreen({ navigation }: any) {
 
             {/* Approval Wait Modal */}
             <Modal visible={showApprovalWaitModal} transparent animationType="fade">
-                <View className="flex-1 justify-center items-center bg-black/50 p-6">
-                    <View className="bg-white w-full rounded-3xl p-8 items-center">
-                        <View className="bg-blue-100 p-6 rounded-full mb-6">
+                <View style={styles.modalOverlay}>
+                    <View style={styles.statusModalContent}>
+                        <View style={styles.statusIconWrapper}>
                             <Ionicons name="time" size={60} color="#2563eb" />
                         </View>
-                        <Text className="text-2xl font-bold mb-4 text-gray-800 text-center">관리자 승인 대기</Text>
-                        <Text className="text-gray-500 text-center leading-6 mb-8">
+                        <Text style={styles.statusModalTitle}>관리자 승인 대기</Text>
+                        <Text style={styles.statusModalDesc}>
                             의뢰 등록이 완료되었습니다!{"\n"}
                             사례금 입금이 확인되면{"\n"}
-                            <Text className="font-bold text-blue-600">관리자 승인 후 즉시 리스트에 노출</Text>됩니다.{"\n\n"}
+                            <Text style={styles.highlightText}>관리자 승인 후 즉시 리스트에 노출</Text>됩니다.{"\n\n"}
                             영업시간 기준 보통 1시간 이내에{"\n"}승인 처리가 완료됩니다.
                         </Text>
                         <TouchableOpacity
-                            className="bg-blue-600 w-full p-4 rounded-xl items-center shadow-lg"
+                            style={styles.modalConfirmButton}
                             onPress={() => {
                                 setShowApprovalWaitModal(false);
                                 navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
                             }}
                         >
-                            <Text className="text-white font-bold text-lg">메인으로 이동</Text>
+                            <Text style={styles.modalConfirmText}>메인으로 이동</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
             </Modal>
 
+            {/* Location Selection Modal */}
             <Modal visible={showMap} animationType="slide">
-                <SafeAreaView className="flex-1 bg-white">
-                    <View className="flex-row justify-between items-center p-4 border-b border-gray-100">
-                        <Text className="text-lg font-bold">위치 선택</Text>
+                <SafeAreaView style={styles.safeArea}>
+                    <View style={styles.modalHeader}>
+                        <Text style={styles.modalHeaderTitle}>위치 선택</Text>
                         <TouchableOpacity onPress={() => setShowMap(false)}>
                             <Ionicons name="close" size={24} color="black" />
                         </TouchableOpacity>
@@ -505,7 +507,6 @@ export default function CreateRequestScreen({ navigation }: any) {
                         onPress={(e) => {
                             setSelectedLocation(e.nativeEvent.coordinate);
                             const { latitude, longitude } = e.nativeEvent.coordinate;
-                            // Update location name if empty or as helpful text
                             if (!locationName) {
                                 setLocationName(`위치: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
                             }
@@ -515,40 +516,432 @@ export default function CreateRequestScreen({ navigation }: any) {
                             <Marker coordinate={selectedLocation} />
                         )}
                     </MapView>
-                    <View className="p-4 bg-white border-t border-gray-100">
+                    <View style={styles.modalFooter}>
                         <TouchableOpacity
-                            className="bg-blue-600 p-4 rounded-xl items-center"
+                            style={styles.modalConfirmButton}
                             onPress={() => setShowMap(false)}
                         >
-                            <Text className="text-white font-bold text-lg">확인</Text>
+                            <Text style={styles.modalConfirmText}>확인</Text>
                         </TouchableOpacity>
                     </View>
                 </SafeAreaView>
             </Modal>
-
-            {/* Success Modal */}
-            <Modal visible={showSuccessModal} transparent animationType="fade">
-                <View className="flex-1 justify-center items-center bg-black/60 px-6">
-                    <View className="bg-white w-full rounded-3xl p-8 items-center">
-                        <View className="w-20 h-20 bg-blue-100 rounded-full items-center justify-center mb-6">
-                            <Ionicons name="checkmark" size={48} color="#2563eb" />
-                        </View>
-
-                        <Text className="text-2xl font-bold text-gray-900 mb-2">등록이 완료되었습니다!</Text>
-                        <Text className="text-gray-500 text-center mb-8 leading-6">
-                            작성하신 의뢰가 성공적으로 등록되었습니다.{"\n"}
-                            이제 홈 화면에서 확인하실 수 있습니다.
-                        </Text>
-
-                        <TouchableOpacity
-                            onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Main' }] })}
-                            className="w-full bg-blue-600 py-4 rounded-xl items-center shadow-lg shadow-blue-500/30"
-                        >
-                            <Text className="text-white font-bold text-lg">홈으로 돌아가기</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </Modal>
         </SafeAreaView>
     );
 }
+
+const styles = StyleSheet.create({
+    safeArea: {
+        flex: 1,
+        backgroundColor: '#ffffff',
+    },
+    headerBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f3f4f6',
+        backgroundColor: '#ffffff',
+        zIndex: 10,
+    },
+    closeHeaderButton: {
+        padding: 4,
+    },
+    headerTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginLeft: 16,
+        color: '#1e40af',
+    },
+    scrollView: {
+        flex: 1,
+        backgroundColor: '#f9fafb',
+    },
+    scrollContent: {
+        paddingBottom: 40,
+    },
+    hero: {
+        backgroundColor: '#2563eb',
+        padding: 24,
+        paddingBottom: 32,
+    },
+    heroTitle: {
+        color: '#ffffff',
+        fontSize: 20,
+        fontWeight: 'bold',
+        lineHeight: 28,
+        marginBottom: 8,
+    },
+    heroSubtitle: {
+        color: '#dbeafe',
+        fontSize: 14,
+    },
+    formContainer: {
+        padding: 16,
+        marginTop: -24,
+    },
+    formCard: {
+        backgroundColor: '#ffffff',
+        borderRadius: 16,
+        padding: 20,
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+    },
+    inputGroup: {
+        marginBottom: 24,
+    },
+    inputLabel: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#4b5563',
+        marginBottom: 8,
+    },
+    textInput: {
+        backgroundColor: '#f9fafb',
+        borderWidth: 1,
+        borderColor: '#e5e7eb',
+        borderRadius: 12,
+        padding: 16,
+        fontSize: 16,
+        color: '#1f2937',
+    },
+    textArea: {
+        height: 120,
+    },
+    row: {
+        flexDirection: 'row',
+    },
+    mapIconButton: {
+        backgroundColor: '#eff6ff',
+        padding: 16,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#bfdbfe',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    pickerButton: {
+        flex: 1,
+        backgroundColor: '#f9fafb',
+        borderWidth: 1,
+        borderColor: '#e5e7eb',
+        borderRadius: 12,
+        padding: 16,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    pickerText: {
+        color: '#1f2937',
+        fontSize: 16,
+    },
+    rewardInputContainer: {
+        position: 'relative',
+    },
+    rewardInput: {
+        backgroundColor: '#f9fafb',
+        borderWidth: 1,
+        borderColor: '#e5e7eb',
+        borderRadius: 12,
+        padding: 16,
+        paddingRight: 40,
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#2563eb',
+    },
+    rewardUnit: {
+        position: 'absolute',
+        right: 16,
+        top: 20,
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#6b7280',
+    },
+    depositInfoBox: {
+        marginTop: 8,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        backgroundColor: '#eff6ff',
+        padding: 12,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#dbeafe',
+    },
+    depositLabel: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: '#1e40af',
+    },
+    depositValue: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#2563eb',
+    },
+    policyText: {
+        fontSize: 10,
+        color: '#9ca3af',
+        marginTop: 4,
+    },
+    imageScroll: {
+        flexDirection: 'row',
+        marginTop: 4,
+    },
+    addImageButton: {
+        width: 96,
+        height: 96,
+        backgroundColor: '#f9fafb',
+        borderRadius: 8,
+        borderWidth: 1,
+        borderStyle: 'dashed',
+        borderColor: '#93c5fd',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 8,
+    },
+    addImageText: {
+        color: '#2563eb',
+        fontSize: 12,
+        fontWeight: 'bold',
+        marginTop: 4,
+    },
+    imageWrapper: {
+        position: 'relative',
+        marginRight: 8,
+    },
+    imageItem: {
+        width: 96,
+        height: 96,
+        borderRadius: 8,
+        backgroundColor: '#f3f4f6',
+    },
+    removeImageButton: {
+        position: 'absolute',
+        top: -8,
+        right: -8,
+        backgroundColor: '#ef4444',
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 2,
+        borderColor: '#ffffff',
+    },
+    submitButton: {
+        backgroundColor: '#2563eb',
+        padding: 16,
+        borderRadius: 12,
+        alignItems: 'center',
+        marginTop: 16,
+        elevation: 4,
+        shadowColor: '#2563eb',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+    },
+    submitButtonText: {
+        color: '#ffffff',
+        fontSize: 18,
+        fontWeight: 'bold',
+    },
+    disabledButton: {
+        opacity: 0.5,
+    },
+    footerInfo: {
+        marginTop: 32,
+        paddingHorizontal: 8,
+    },
+    footerRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        marginBottom: 16,
+    },
+    footerIcon: {
+        marginRight: 12,
+        marginTop: 2,
+    },
+    footerText: {
+        flex: 1,
+        fontSize: 14,
+        color: '#6b7280',
+        lineHeight: 20,
+    },
+    // Modal Styles
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    modalContent: {
+        backgroundColor: '#ffffff',
+        width: '100%',
+        borderRadius: 24,
+        padding: 24,
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginBottom: 24,
+        textAlign: 'center',
+        color: '#1f2937',
+    },
+    wheelContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        marginBottom: 24,
+    },
+    wheelColumn: {
+        height: 160,
+        width: '30%',
+    },
+    wheelItem: {
+        padding: 12,
+        alignItems: 'center',
+        borderRadius: 8,
+        marginBottom: 4,
+    },
+    activeWheelItem: {
+        backgroundColor: '#eff6ff',
+    },
+    wheelText: {
+        fontSize: 18,
+        color: '#9ca3af',
+    },
+    activeWheelText: {
+        color: '#2563eb',
+        fontWeight: 'bold',
+    },
+    modalConfirmButton: {
+        backgroundColor: '#2563eb',
+        padding: 16,
+        borderRadius: 12,
+        alignItems: 'center',
+        width: '100%',
+    },
+    modalConfirmText: {
+        color: '#ffffff',
+        fontSize: 18,
+        fontWeight: 'bold',
+    },
+    // Bottom Sheet
+    bottomSheetContent: {
+        backgroundColor: '#ffffff',
+        borderTopLeftRadius: 32,
+        borderTopRightRadius: 32,
+        padding: 24,
+        paddingBottom: 48,
+        width: '100%',
+    },
+    bottomSheetHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 24,
+    },
+    bottomSheetTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#1f2937',
+    },
+    depositSummaryBox: {
+        backgroundColor: '#eff6ff',
+        padding: 16,
+        borderRadius: 16,
+        marginBottom: 24,
+        alignItems: 'center',
+    },
+    depositSummaryTitle: {
+        color: '#1e40af',
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 4,
+    },
+    depositSummarySubtitle: {
+        color: '#3b82f6',
+        fontSize: 12,
+        fontWeight: 'bold',
+    },
+    bankInfoContainer: {
+        marginBottom: 32,
+    },
+    bankInfoRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f3f4f6',
+    },
+    bankInfoLabel: {
+        color: '#6b7280',
+        fontSize: 14,
+    },
+    bankInfoValue: {
+        color: '#1f2937',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    bankInfoNote: {
+        fontSize: 12,
+        color: '#9ca3af',
+        textAlign: 'center',
+        lineHeight: 18,
+        marginBottom: 24,
+    },
+    // Status Modal
+    statusModalContent: {
+        backgroundColor: '#ffffff',
+        width: '100%',
+        borderRadius: 32,
+        padding: 32,
+        alignItems: 'center',
+    },
+    statusIconWrapper: {
+        backgroundColor: '#eff6ff',
+        padding: 24,
+        borderRadius: 50,
+        marginBottom: 24,
+    },
+    statusModalTitle: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        marginBottom: 16,
+        color: '#1f2937',
+        textAlign: 'center',
+    },
+    statusModalDesc: {
+        color: '#6b7280',
+        textAlign: 'center',
+        lineHeight: 24,
+        marginBottom: 32,
+        fontSize: 14,
+    },
+    highlightText: {
+        fontWeight: 'bold',
+        color: '#2563eb',
+    },
+    // Map Modal Header
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f3f4f6',
+    },
+    modalHeaderTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+    },
+    modalFooter: {
+        padding: 16,
+        backgroundColor: '#ffffff',
+        borderTopWidth: 1,
+        borderTopColor: '#f3f4f6',
+    }
+});
