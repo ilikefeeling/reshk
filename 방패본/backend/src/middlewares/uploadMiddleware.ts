@@ -1,6 +1,6 @@
 import multer from 'multer';
 import path from 'path';
-import { v4 as uuidv4 } from 'uuid';
+import crypto from 'crypto';
 import fs from 'fs';
 
 // uploads 폴더가 없으면 생성
@@ -15,7 +15,7 @@ const storage = multer.diskStorage({
         cb(null, uploadDir);
     },
     filename: (req, file, cb) => {
-        const uniqueName = `${uuidv4()}${path.extname(file.originalname)}`;
+        const uniqueName = `${crypto.randomUUID()}${path.extname(file.originalname)}`;
         cb(null, uniqueName);
     }
 });
