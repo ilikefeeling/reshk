@@ -3,7 +3,6 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 
-const KAKAO_AUTH_URL = `https://kauth.kakao.com/oauth/authorize?client_id=50fabbcf9a9d8375b8655c807a3d3f0f&redirect_uri=https://www.lookingall.com/api/auth/kakao/callback&response_type=code`;
 
 export default function LoginScreen({ navigation, route }: any) {
     const { isLoggedIn } = useAuth();
