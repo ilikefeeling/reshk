@@ -62,35 +62,40 @@ export default function LoginScreen({ navigation, route }: any) {
         }
     };
 
-    const handleKakaoCode = async (code: string) => {
-        try {
-            setLoading(true);
-            const response = await api.post('/auth/kakao', { code });
-            const { token, user } = response.data;
-
-            if (token) {
-                await login(token, user);
-            } else {
-                Alert.alert('오류', '로그인 응답이 올바르지 않습니다.');
-            }
-        } catch (error: any) {
-            console.error('Kakao login fail:', error.response?.data || error.message);
-            Alert.alert('로그인 실패', '카카오 로그인 처리 중 오류가 발생했습니다.');
-        } finally {
-            setLoading(false);
-            setShowKakao(false);
-        }
-    };
 
     const onNavigationStateChange = (navState: any) => {
         const { url } = navState;
-        if (url.includes('code=')) {
-            const code = url.split('code=')[1].split('&')[0];
-            handleKakaoCode(code);
-        } else if (url.includes('error=')) {
+        console.log('[DEBUG] WebView Navigation:', url);
+
+        // 1. Check if the URL contains the token (Backend has finished processing)
+        if (url.includes('token=') && url.includes('user=')) {
+            try {
+                // Parse params manually if URL object is finicky in some environments
+                const tokenMatch = url.match(/token=([^&]+)/);
+                const userMatch = url.match(/user=([^&]+)/);
+
+                if (tokenMatch && userMatch) {
+                    console.log('[DEBUG] Token captured from final redirect, logging in...');
+                    const token = tokenMatch[1];
+                    const user = JSON.parse(decodeURIComponent(userMatch[1]));
+                    login(token, user);
+                    setShowKakao(false);
+                }
+            } catch (error) {
+                console.error('Error parsing token from URL:', error);
+            }
+            return;
+        }
+
+        // 2. Handle Errors
+        if (url.includes('error=')) {
             setShowKakao(false);
             Alert.alert('로그인 취소', '카카오 로그인이 취소되었습니다.');
         }
+
+        // NOTE: We intentionally do NOT handle 'code=' here anymore.
+        // The WebView will naturally redirect to the Backend callback,
+        // which will then redirect back to our app with the 'token='.
     };
 
     return (

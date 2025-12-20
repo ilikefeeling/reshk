@@ -126,8 +126,12 @@ export const kakaoLogin = async (req: Request, res: Response) => {
 
         res.status(200).json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role, profileImage: user.profileImage } });
     } catch (error: any) {
-        console.error('Kakao Login Error:', error.response?.data || error.message);
-        res.status(500).json({ message: 'Social login failed' });
+        if (error.response) {
+            console.error('[DEBUG] Kakao Token Exchange Fail:', JSON.stringify(error.response.data, null, 2));
+        } else {
+            console.error('Kakao Login Error:', error.message);
+        }
+        res.status(500).json({ message: 'Social login failed', error: error.response?.data?.error_description || error.message });
     }
 };
 
