@@ -6,10 +6,10 @@
       "use": "@vercel/node"
     },
     {
-      "src": "package.json",
+      "src": "frontend/package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "frontend/dist"
+        "distDir": "dist"
       }
     }
   ],
@@ -23,12 +23,13 @@
       "destination": "backend/src/index.ts"
     },
     {
-      "source": "/((?!api|uploads).*)",
-      "destination": "frontend/dist/$1"
+      "source": "/(.*)",
+      "destination": "frontend/$1",
+      "continue": true
     },
     {
       "source": "/(.*)",
-      "destination": "/index.html"
+      "destination": "frontend/index.html"
     }
   ]
 }

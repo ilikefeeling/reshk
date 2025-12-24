@@ -85,6 +85,7 @@ model Request {
   description   String
   rewardAmount  Decimal
   depositAmount Decimal
+  marketValue   Decimal? // 시중 가치 (사례금 가이드용)
   location      String
   latitude      Float?   // 위도
   longitude     Float?   // 경도
@@ -114,8 +115,10 @@ model Report {
   verificationScore Float? // Overall trust score 0-1
   aiScore           Float? // Google Vision similarity score 0-1
   location      String
-  status        String   @default("PENDING") // PENDING, ACCEPTED, REJECTED
-  createdAt     DateTime @default(now())
+  status        String    @default("PENDING") // PENDING, ACCEPTED, REJECTED, DELIVERED
+  verificationToken String? // QR 코드 인도 확인용 토큰
+  deliveredAt   DateTime? // 실제 물건 인도 완료 시간
+  createdAt     DateTime  @default(now())
   transactions  Transaction[]
 }
 

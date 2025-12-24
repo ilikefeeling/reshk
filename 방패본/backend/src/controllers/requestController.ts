@@ -1,11 +1,12 @@
 import { Response } from 'express';
 import prisma from '../utils/prisma';
 import { AuthRequest } from '../middlewares/authMiddleware';
+import notificationService from '../services/notificationService';
 
 // Create a new request
 export const createRequest = async (req: AuthRequest, res: Response) => {
     try {
-        const { category, title, description, rewardAmount, depositAmount, location, images, latitude, longitude, status, metadata } = req.body;
+        const { category, title, description, rewardAmount, depositAmount, marketValue, location, images, latitude, longitude, status, metadata } = req.body;
         const userId = req.user?.userId;
 
         if (!userId) {
@@ -47,9 +48,22 @@ export const createRequest = async (req: AuthRequest, res: Response) => {
                 longitude: longitude ? Number(longitude) : null,
                 images: images || [],
                 metadata: metadata || null,
+                marketValue: marketValue ? Number(marketValue) : null,
                 status: status || 'OPEN', // Use status from body if provided (TEMPORARY BYPASS)
             },
         });
+
+        // --- GEOFENCING NOTIFICATION ---
+        if (request.status === 'OPEN' && request.latitude && request.longitude) {
+            notificationService.sendNearbyNotification(
+                request.latitude,
+                request.longitude,
+                2, // 2km radius
+                request.title,
+                `내 주변에서 물건을 찾는 분이 있습니다: ${request.location}`,
+                { type: 'request', requestId: request.id }
+            ).catch(err => console.error('Geofencing notification failed:', err));
+        }
 
         res.status(201).json(request);
     } catch (error) {

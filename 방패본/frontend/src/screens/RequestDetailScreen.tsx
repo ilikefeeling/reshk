@@ -13,7 +13,9 @@ export default function RequestDetailScreen({ route, navigation }: any) {
     const { user } = useAuth();
     const currentUserId = user?.id;
     const [item, setItem] = useState<any>(null);
+    const [reports, setReports] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [verifying, setVerifying] = useState(false);
 
     useEffect(() => {
         const fetchDetail = async () => {
@@ -46,8 +48,39 @@ export default function RequestDetailScreen({ route, navigation }: any) {
                 setLoading(false);
             }
         };
-        if (id) fetchDetail();
+        if (id) {
+            fetchDetail();
+            // Fetch reports if request owner
+            api.get(`/reports/request/${id}`).then(res => setReports(res.data)).catch(() => { });
+        }
     }, [id]);
+
+    const handleVerifyDelivery = async (reportId: number) => {
+        // Simplified: In real app, this would open QR Scanner. 
+        // For this demo, we'll simulate scanning with the correct token if available.
+        Alert.prompt(
+            'QR 코드 스캔',
+            '습득자가 제시한 QR 코드의 인증 토큰을 입력하세요.',
+            [
+                { text: '취소', style: 'cancel' },
+                {
+                    text: '인증하기',
+                    onPress: async (token: any) => {
+                        try {
+                            setVerifying(true);
+                            await api.post('/reports/delivery/verify', { reportId, token });
+                            Alert.alert('성공', '물건 인도가 확인되었습니다. 보상금이 지급됩니다.');
+                            navigation.navigate('Main');
+                        } catch (error: any) {
+                            Alert.alert('실패', error.response?.data?.message || '인증에 실패했습니다.');
+                        } finally {
+                            setVerifying(false);
+                        }
+                    }
+                }
+            ]
+        );
+    };
 
     if (loading) {
         return (
@@ -163,6 +196,52 @@ export default function RequestDetailScreen({ route, navigation }: any) {
                     <Text style={styles.descriptionText}>
                         {item.description}
                     </Text>
+
+                    {/* V-Matching (Reports Section) */}
+                    {item.userId === currentUserId && reports.length > 0 && (
+                        <View style={styles.reportsSection}>
+                            <View style={styles.sectionHeader}>
+                                <Ionicons name="sparkles" size={20} color="#2563eb" />
+                                <Text style={styles.sectionTitle}>V-Matching 제보 리스트</Text>
+                            </View>
+                            <Text style={styles.sectionSubtitle}>AI가 분석한 이미지 유사도 기반 신뢰도 점수입니다.</Text>
+
+                            {reports.map((report: any) => (
+                                <View key={report.id} style={styles.reportCard}>
+                                    <View style={styles.reportTop}>
+                                        <RNImage source={{ uri: report.images[0] }} style={styles.reportThumb} />
+                                        <View style={styles.reportInfo}>
+                                            <View style={styles.aiBadgeRow}>
+                                                <View style={[styles.aiScoreBadge, { backgroundColor: report.aiScore > 0.8 ? '#dcfce7' : '#fef9c3' }]}>
+                                                    <Text style={[styles.aiScoreText, { color: report.aiScore > 0.8 ? '#16a34a' : '#a16207' }]}>
+                                                        신뢰도 {Math.round(report.aiScore * 100)}%
+                                                    </Text>
+                                                </View>
+                                                <Text style={styles.reportTime}>{new Date(report.createdAt).toLocaleTimeString()}</Text>
+                                            </View>
+                                            <Text style={styles.reportDesc} numberOfLines={2}>{report.description}</Text>
+                                        </View>
+                                    </View>
+
+                                    {report.status === 'ACCEPTED' && (
+                                        <TouchableOpacity
+                                            style={styles.verifyButton}
+                                            onPress={() => handleVerifyDelivery(report.id)}
+                                        >
+                                            <Ionicons name="qr-code-outline" size={18} color="#ffffff" />
+                                            <Text style={styles.verifyButtonText}>물건 인도 확인 (QR 스캔)</Text>
+                                        </TouchableOpacity>
+                                    )}
+                                    {report.status === 'DELIVERED' && (
+                                        <View style={styles.deliveredBadge}>
+                                            <Ionicons name="checkmark-done" size={18} color="#16a34a" />
+                                            <Text style={styles.deliveredText}>인도 완료 및 정산됨</Text>
+                                        </View>
+                                    )}
+                                </View>
+                            ))}
+                        </View>
+                    )}
                 </View>
             </ScrollView>
 
@@ -467,5 +546,102 @@ const styles = StyleSheet.create({
     disabledActionText: {
         color: '#9ca3af',
         fontWeight: 'bold',
+    },
+    // Advanced UI Styles
+    reportsSection: {
+        marginTop: 24,
+        paddingTop: 24,
+        borderTopWidth: 1,
+        borderTopColor: '#f3f4f6',
+    },
+    sectionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 4,
+    },
+    sectionTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#111827',
+        marginLeft: 8,
+    },
+    sectionSubtitle: {
+        fontSize: 13,
+        color: '#6b7280',
+        marginBottom: 16,
+    },
+    reportCard: {
+        backgroundColor: '#f8fafc',
+        borderRadius: 12,
+        padding: 12,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+    },
+    reportTop: {
+        flexDirection: 'row',
+    },
+    reportThumb: {
+        width: 60,
+        height: 60,
+        borderRadius: 8,
+        backgroundColor: '#e5e7eb',
+    },
+    reportInfo: {
+        flex: 1,
+        marginLeft: 12,
+    },
+    aiBadgeRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 4,
+    },
+    aiScoreBadge: {
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 4,
+    },
+    aiScoreText: {
+        fontSize: 11,
+        fontWeight: 'bold',
+    },
+    reportTime: {
+        fontSize: 11,
+        color: '#9ca3af',
+    },
+    reportDesc: {
+        fontSize: 13,
+        color: '#475569',
+    },
+    verifyButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#2563eb',
+        paddingVertical: 10,
+        borderRadius: 8,
+        marginTop: 12,
+    },
+    verifyButtonText: {
+        color: '#ffffff',
+        fontWeight: 'bold',
+        fontSize: 14,
+        marginLeft: 8,
+    },
+    deliveredBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#dcfce7',
+        paddingVertical: 10,
+        borderRadius: 8,
+        marginTop: 12,
+    },
+    deliveredText: {
+        color: '#16a34a',
+        fontWeight: 'bold',
+        fontSize: 14,
+        marginLeft: 8,
     },
 });

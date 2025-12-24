@@ -1,4 +1,5 @@
 import axios from 'axios';
+import prisma from '../utils/prisma';
 
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
 
@@ -127,6 +128,53 @@ export class NotificationService {
             `${typeText} ${amount.toLocaleString()}원 결제가 완료되었습니다`,
             { type: 'payment', paymentType: type }
         );
+    }
+
+    /**
+     * 특정 영역(Geofencing) 사용자들에게 알림 발송
+     * @param lat 위도
+     * @param lng 경도
+     * @param radiusKm 반경 (km)
+     * @param title 제목
+     * @param body 내용
+     * @param data 전달 데이터
+     */
+    async sendNearbyNotification(
+        lat: number,
+        lng: number,
+        radiusKm: number,
+        title: string,
+        body: string,
+        data?: any
+    ): Promise<void> {
+        try {
+            // 1. 반경 내에 있는 사용자들을 찾으려면? 
+            // 실제 구현에서는 사용자들의 '현재 위치' 테이블이 있거나 가장 최근 요청/습득물 기반으로 필터링
+            // 여기서는 시뮬레이션을 위해 "IdentityStatus가 VERIFIED인 사용자들 중 푸시 토큰이 있는 사람"에게 보냄
+            // (실제 프로덕션에서는 PostGIS나 Haversine 수식을 Prisma raw query로 사용하여 위치 기반 필터링 권장)
+            const recipients = await prisma.user.findMany({
+                where: {
+                    pushToken: { not: null },
+                    identityStatus: 'VERIFIED'
+                },
+                select: { pushToken: true }
+            });
+
+            if (recipients.length === 0) return;
+
+            const messages: PushMessage[] = recipients.map(r => ({
+                to: r.pushToken!,
+                title: `[내 주변 습득 도움 요청] ${title}`,
+                body,
+                data,
+                sound: 'default'
+            }));
+
+            await this.sendMultiplePushNotifications(messages);
+            console.log(`Sent nearby notification to ${recipients.length} users`);
+        } catch (error) {
+            console.error('Nearby notification failed:', error);
+        }
     }
 }
 

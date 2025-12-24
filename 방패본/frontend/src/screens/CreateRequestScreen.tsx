@@ -12,6 +12,8 @@ export default function CreateRequestScreen({ navigation }: any) {
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [reward, setReward] = useState('');
+    const [marketValue, setMarketValue] = useState('');
+    const [rewardGuidance, setRewardGuidance] = useState<{ min: number, max: number } | null>(null);
     const [locationName, setLocationName] = useState('');
     const [lostDate, setLostDate] = useState(new Date().toISOString().split('T')[0]);
     const [loading, setLoading] = useState(false);
@@ -50,6 +52,19 @@ export default function CreateRequestScreen({ navigation }: any) {
             return;
         }
         setReward(num.toString());
+    };
+
+    const handleMarketValueChange = (val: string) => {
+        const num = parseInt(val.replace(/[^0-9]/g, '')) || 0;
+        setMarketValue(num.toString());
+        if (num > 0) {
+            setRewardGuidance({
+                min: Math.floor(num * 0.05),
+                max: Math.floor(num * 0.20)
+            });
+        } else {
+            setRewardGuidance(null);
+        }
     };
 
     useEffect(() => {
@@ -165,6 +180,7 @@ export default function CreateRequestScreen({ navigation }: any) {
                 description: `[분실물 의뢰]\n분실 일시: ${formattedDate}\n\n${description}`,
                 rewardAmount: rewardValue,
                 depositAmount: depositValue,
+                marketValue: Number(marketValue),
                 location: locationName,
                 latitude: selectedLocation?.latitude,
                 longitude: selectedLocation?.longitude,
@@ -196,7 +212,11 @@ export default function CreateRequestScreen({ navigation }: any) {
                 {/* Hero */}
                 <View style={styles.hero}>
                     <Text style={styles.heroTitle}>"소중한 물건을 찾기 위한 첫 걸음,{"\n"}LookingAll이 함께합니다."</Text>
-                    <Text style={styles.heroSubtitle}>보상 설정 금액에 따라 최소 예치금만으로 의뢰가 가능합니다.</Text>
+                    <View style={styles.safeCareBadge}>
+                        <Ionicons name="shield-checkmark" size={16} color="#ffffff" />
+                        <Text style={styles.safeCareBadgeText}>LookingAll 세이프 케어 적용 중</Text>
+                    </View>
+                    <Text style={styles.heroSubtitle}>보상금은 플랫폼이 안전하게 보관하며,{"\n"}물건 수령 확인 시 습득자에게 즉시 지급됩니다.</Text>
                 </View>
 
                 <View style={styles.formContainer}>
@@ -269,9 +289,33 @@ export default function CreateRequestScreen({ navigation }: any) {
                             </View>
                         </View>
 
+                        {/* Reward Guidance Calculator */}
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.inputLabel}>물건의 시중 가치 (선택)</Text>
+                            <View style={styles.rewardInputContainer}>
+                                <TextInput
+                                    style={styles.textInput}
+                                    placeholder="예) 1,500,000 (아이폰 예상 가격)"
+                                    keyboardType="numeric"
+                                    value={formatCurrency(marketValue)}
+                                    onChangeText={handleMarketValueChange}
+                                    placeholderTextColor="#9ca3af"
+                                />
+                                <Text style={styles.rewardUnit}>원</Text>
+                            </View>
+                            {rewardGuidance && (
+                                <View style={styles.guidanceBox}>
+                                    <Ionicons name="information-circle-outline" size={16} color="#2563eb" />
+                                    <Text style={styles.guidanceText}>
+                                        유실물법 권장 사례금: <Text style={styles.boldText}>{formatCurrency(rewardGuidance.min.toString())}원 ~ {formatCurrency(rewardGuidance.max.toString())}원</Text> (5~20%)
+                                    </Text>
+                                </View>
+                            )}
+                        </View>
+
                         {/* Reward */}
                         <View style={styles.inputGroup}>
-                            <Text style={styles.inputLabel}>보상 설정 (사례금)</Text>
+                            <Text style={styles.inputLabel}>보상 설정 (사례금) <Text style={styles.requiredText}>*</Text></Text>
                             <View style={styles.rewardInputContainer}>
                                 <TextInput
                                     style={styles.rewardInput}
@@ -284,13 +328,13 @@ export default function CreateRequestScreen({ navigation }: any) {
                                 <Text style={styles.rewardUnit}>원</Text>
                             </View>
                             <View style={styles.depositInfoBox}>
-                                <Text style={styles.depositLabel}>실 입금액(예치금):</Text>
+                                <Text style={styles.depositLabel}>보증금 예치금액:</Text>
                                 <Text style={styles.depositValue}>
                                     {formatCurrency(calculateDeposit(Number(reward)).toString())}원
                                 </Text>
                             </View>
                             <Text style={styles.policyText}>
-                                * 10만원 이하 100% / 10만원 초과 시 10% 선입금 정책이 적용됩니다.
+                                * LookingAll이 보상금 지급을 보증합니다. (수수료 포함)
                             </Text>
                         </View>
 
@@ -575,6 +619,42 @@ const styles = StyleSheet.create({
     heroSubtitle: {
         color: '#dbeafe',
         fontSize: 14,
+        lineHeight: 20,
+    },
+    safeCareBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        alignSelf: 'flex-start',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 4,
+        marginBottom: 12,
+    },
+    safeCareBadgeText: {
+        color: '#ffffff',
+        fontSize: 12,
+        fontWeight: '600',
+        marginLeft: 4,
+    },
+    guidanceBox: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#eff6ff',
+        padding: 10,
+        borderRadius: 8,
+        marginTop: 8,
+    },
+    guidanceText: {
+        fontSize: 12,
+        color: '#1e40af',
+        marginLeft: 6,
+    },
+    boldText: {
+        fontWeight: 'bold',
+    },
+    requiredText: {
+        color: '#ef4444',
     },
     formContainer: {
         padding: 16,

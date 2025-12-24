@@ -245,6 +245,15 @@ const AdminDashboardScreen = ({ navigation }: any) => {
                         </View>
                         <Text style={styles.dateText}>{new Date(item.createdAt).toLocaleDateString()}</Text>
                     </View>
+                    {item.status === 'PENDING_DEPOSIT' && (
+                        <TouchableOpacity
+                            onPress={() => handleApproveRequest(item.id)}
+                            style={styles.cardApproveButton}
+                        >
+                            <Ionicons name="checkmark-circle" size={16} color="white" />
+                            <Text style={styles.cardApproveButtonText}>매니저 입금 확인</Text>
+                        </TouchableOpacity>
+                    )}
                 </TouchableOpacity>
             )}
         />
@@ -380,6 +389,20 @@ const AdminDashboardScreen = ({ navigation }: any) => {
                 }
             }
         ]);
+    };
+
+    const handleApproveRequest = async (id: number) => {
+        try {
+            setLoading(true);
+            await api.post(`/requests/admin/${id}/approve`);
+            Alert.alert('성공', '사례금 입금이 확인되었으며 의뢰가 활성화되었습니다.');
+            fetchData();
+        } catch (error) {
+            console.error(error);
+            Alert.alert('오류', '승인 처리 중 문제가 발생했습니다.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const renderReports = () => (
@@ -1050,6 +1073,21 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         fontSize: 12,
         marginLeft: 4,
+    },
+    cardApproveButton: {
+        backgroundColor: '#4f46e5',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 10,
+        borderRadius: 12,
+        marginTop: 12,
+    },
+    cardApproveButtonText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 14,
+        marginLeft: 6,
     },
     emptyContainer: {
         flex: 1,
