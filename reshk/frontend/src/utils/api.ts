@@ -5,10 +5,18 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // For Android Emulator, use 'http://10.0.2.2:3000'
 // For iOS Simulator, use 'http://localhost:3000'
 import { Platform } from 'react-native';
-const IS_PROD = !__DEV__ || Platform.OS === 'web' && !window.location.hostname.includes('localhost');
-const BASE_URL = IS_PROD
-    ? '/api'
-    : 'http://192.168.1.112:3002/api';
+const getBaseUrl = () => {
+    if (Platform.OS === 'web') {
+        // 웹 환경: 로컬이면 3002 포트, 아니면 상위 경로(/api) 사용
+        return window.location.hostname === 'localhost'
+            ? 'http://localhost:3002/api'
+            : '/api';
+    }
+    // 모바일 환경: 환경 변수가 있으면 사용, 없으면 로컬 에뮬레이터 주소 사용
+    return process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:3002/api';
+};
+
+const BASE_URL = getBaseUrl();
 
 console.log('Current API BASE_URL:', BASE_URL);
 
