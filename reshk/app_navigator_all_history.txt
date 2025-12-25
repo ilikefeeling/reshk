@@ -1,0 +1,51 @@
+commit 262336f27eca3bde597788f9c2fbbd992e35b79a
+Author: Rio Shin <ilikefeeling@gmail.com>
+Date:   Fri Dec 19 00:19:43 2025 +0900
+
+    완벽한 배포 준비 완료
+
+diff --git a/frontend/src/navigation/AppNavigator.tsx b/frontend/src/navigation/AppNavigator.tsx
+new file mode 100644
+index 00000000..7b1892da
+--- /dev/null
++++ b/frontend/src/navigation/AppNavigator.tsx
+@@ -0,0 +1,39 @@
++import React from 'react';
++import { NavigationContainer } from '@react-navigation/native';
++import { createNativeStackNavigator } from '@react-navigation/native-stack';
++import LoginScreen from '../screens/LoginScreen';
++import SignupScreen from '../screens/SignupScreen';
++import MainTabNavigator from './MainTabNavigator';
++import CreateRequestScreen from '../screens/CreateRequestScreen';
++import RequestDetailScreen from '../screens/RequestDetailScreen';
++import PaymentScreen from '../screens/PaymentScreen';
++import ChatScreen from '../screens/ChatScreen';
++import TransactionHistoryScreen from '../screens/TransactionHistoryScreen';
++import ServiceInfoScreen from '../screens/ServiceInfoScreen';
++
++import CreateReportScreen from '../screens/CreateReportScreen';
++import GuidePage from '../pages/GuidePage';
++import AdminDashboardScreen from '../screens/AdminDashboardScreen';
++
++const Stack = createNativeStackNavigator();
++
++export default function AppNavigator() {
++    return (
++        <NavigationContainer>
++            <Stack.Navigator initialRouteName="Main" screenOptions={{ headerShown: false }}>
++                <Stack.Screen name="Main" component={MainTabNavigator} />
++                <Stack.Screen name="Login" component={LoginScreen} />
++                <Stack.Screen name="Signup" component={SignupScreen} />
++                <Stack.Screen name="CreateRequest" component={CreateRequestScreen} options={{ presentation: 'modal' }} />
++                <Stack.Screen name="CreateReport" component={CreateReportScreen} options={{ presentation: 'modal' }} />
++                <Stack.Screen name="RequestDetail" component={RequestDetailScreen} />
++                <Stack.Screen name="Payment" component={PaymentScreen} />
++                <Stack.Screen name="Chat" component={ChatScreen} />
++                <Stack.Screen name="TransactionHistory" component={TransactionHistoryScreen} />
++                <Stack.Screen name="ServiceInfo" component={ServiceInfoScreen} options={{ presentation: 'modal' }} />
++                <Stack.Screen name="Guide" component={GuidePage} />
++                <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
++            </Stack.Navigator>
++        </NavigationContainer>
++    );
++}
