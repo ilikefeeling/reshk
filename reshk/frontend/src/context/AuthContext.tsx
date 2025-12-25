@@ -123,10 +123,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     };
 
-    if (isLoading) {
-        return null; // Or a splash screen
-    }
-
     return (
         <AuthContext.Provider value={{ isLoggedIn, isLoading, user, login, logout, checkLoginStatus }}>
             {children}

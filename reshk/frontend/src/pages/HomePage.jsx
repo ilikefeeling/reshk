@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import Header from '../components/Header';
@@ -19,7 +19,7 @@ export default function HomePage() {
     const { requests, setRequests } = usePost();
     const navigation = useNavigation();
     const { isLoggedIn } = useAuth();
-    const [loading, setLoading] = React.useState(false);
+    const [loading, setLoading] = React.useState(true);
 
     const fetchRequests = async () => {
         try {
@@ -70,95 +70,101 @@ export default function HomePage() {
     return (
         <SafeAreaView style={styles.safeArea}>
             <Header />
-            <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-                {/* Banner */}
-                <View style={styles.banner}>
-                    <TouchableOpacity
-                        style={styles.infoIcon}
-                        onPress={() => navigation.navigate('Guide')}
-                    >
-                        <Ionicons name="information-circle-outline" size={20} color="#1e40af" />
-                    </TouchableOpacity>
-
-                    <Text style={styles.bannerTitle}>
-                        우리 서비스에 오신 것을 환영합니다
-                    </Text>
-
-                    <View style={styles.bannerButtons}>
+            {loading ? (
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                    <ActivityIndicator size="large" color="#3b82f6" />
+                </View>
+            ) : (
+                <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+                    {/* Banner */}
+                    <View style={styles.banner}>
                         <TouchableOpacity
-                            style={[styles.button, { backgroundColor: '#3b82f6' }]}
-                            onPress={() => handleProtectedAction('CreateRequest')}
+                            style={styles.infoIcon}
+                            onPress={() => navigation.navigate('Guide')}
                         >
-                            <Text style={styles.buttonText}>의뢰하기</Text>
+                            <Ionicons name="information-circle-outline" size={20} color="#1e40af" />
+                        </TouchableOpacity>
+
+                        <Text style={styles.bannerTitle}>
+                            우리 서비스에 오신 것을 환영합니다
+                        </Text>
+
+                        <View style={styles.bannerButtons}>
+                            <TouchableOpacity
+                                style={[styles.button, { backgroundColor: '#3b82f6' }]}
+                                onPress={() => handleProtectedAction('CreateRequest')}
+                            >
+                                <Text style={styles.buttonText}>의뢰하기</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.button, { backgroundColor: '#22c55e' }]}
+                                onPress={() => handleProtectedAction('CreateReport')}
+                            >
+                                <Text style={styles.buttonText}>제보하기</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+
+                    {/* Service Info */}
+                    <View style={styles.serviceInfoRow}>
+                        <TouchableOpacity
+                            style={styles.serviceCard}
+                            onPress={() => navigation.navigate('ServiceInfo', { initialSection: 1 })}
+                        >
+                            <Text style={styles.cardEmoji}>💰</Text>
+                            <Text style={styles.cardText}>사례금</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
-                            style={[styles.button, { backgroundColor: '#22c55e' }]}
-                            onPress={() => handleProtectedAction('CreateReport')}
+                            style={styles.serviceCard}
+                            onPress={() => navigation.navigate('ServiceInfo', { initialSection: 2 })}
                         >
-                            <Text style={styles.buttonText}>제보하기</Text>
+                            <Text style={styles.cardEmoji}>🛡️</Text>
+                            <Text style={styles.cardText}>보증금</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.serviceCard}
+                            onPress={() => navigation.navigate('ServiceInfo', { initialSection: 3 })}
+                        >
+                            <Text style={styles.cardEmoji}>✅</Text>
+                            <Text style={styles.cardText}>100% 지급</Text>
                         </TouchableOpacity>
                     </View>
-                </View>
 
-                {/* Service Info */}
-                <View style={styles.serviceInfoRow}>
-                    <TouchableOpacity
-                        style={styles.serviceCard}
-                        onPress={() => navigation.navigate('ServiceInfo', { initialSection: 1 })}
-                    >
-                        <Text style={styles.cardEmoji}>💰</Text>
-                        <Text style={styles.cardText}>사례금</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.serviceCard}
-                        onPress={() => navigation.navigate('ServiceInfo', { initialSection: 2 })}
-                    >
-                        <Text style={styles.cardEmoji}>🛡️</Text>
-                        <Text style={styles.cardText}>보증금</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.serviceCard}
-                        onPress={() => navigation.navigate('ServiceInfo', { initialSection: 3 })}
-                    >
-                        <Text style={styles.cardEmoji}>✅</Text>
-                        <Text style={styles.cardText}>100% 지급</Text>
-                    </TouchableOpacity>
-                </View>
-
-                {/* Request List Header */}
-                <View style={styles.listHeader}>
-                    <Text style={styles.listHeaderText}>최근 의뢰</Text>
-                    <TouchableOpacity onPress={() => console.log('Load more')}>
-                        <Text style={styles.moreText}>더보기 &gt;</Text>
-                    </TouchableOpacity>
-                </View>
-
-                {/* Request List */}
-                <View style={styles.listContainer}>
-                    {requests.map((req) => (
-                        <TouchableOpacity
-                            key={req.id}
-                            style={styles.requestItem}
-                            onPress={() => navigation.navigate('RequestDetail', { id: req.id })}
-                        >
-                            <View style={styles.itemIconContainer}>
-                                <Text style={styles.itemEmoji}>{iconMap[req.keyword] || '❓'}</Text>
-                            </View>
-                            <View style={styles.itemInfo}>
-                                <Text style={styles.itemTitle}>{req.title}</Text>
-                                <Text style={styles.itemDate}>
-                                    {req.date} • 조회 0
-                                </Text>
-                            </View>
-                            <View style={styles.priceTag}>
-                                <Text style={styles.priceText}>
-                                    {req.rewardAmount ? `₩${Number(req.rewardAmount).toLocaleString()}` : (req.reward || '₩0')}
-                                </Text>
-                            </View>
+                    {/* Request List Header */}
+                    <View style={styles.listHeader}>
+                        <Text style={styles.listHeaderText}>최근 의뢰</Text>
+                        <TouchableOpacity onPress={() => console.log('Load more')}>
+                            <Text style={styles.moreText}>더보기 &gt;</Text>
                         </TouchableOpacity>
-                    ))}
-                </View>
-            </ScrollView>
+                    </View>
+
+                    {/* Request List */}
+                    <View style={styles.listContainer}>
+                        {requests.map((req) => (
+                            <TouchableOpacity
+                                key={req.id}
+                                style={styles.requestItem}
+                                onPress={() => navigation.navigate('RequestDetail', { id: req.id })}
+                            >
+                                <View style={styles.itemIconContainer}>
+                                    <Text style={styles.itemEmoji}>{iconMap[req.keyword] || '❓'}</Text>
+                                </View>
+                                <View style={styles.itemInfo}>
+                                    <Text style={styles.itemTitle}>{req.title}</Text>
+                                    <Text style={styles.itemDate}>
+                                        {req.date} • 조회 0
+                                    </Text>
+                                </View>
+                                <View style={styles.priceTag}>
+                                    <Text style={styles.priceText}>
+                                        {req.rewardAmount ? `₩${Number(req.rewardAmount).toLocaleString()}` : (req.reward || '₩0')}
+                                    </Text>
+                                </View>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                </ScrollView>
+            )}
         </SafeAreaView>
     );
 }

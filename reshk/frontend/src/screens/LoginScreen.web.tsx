@@ -14,7 +14,7 @@ export default function LoginScreen({ navigation, route }: any) {
 
     useEffect(() => {
         if (isLoggedIn) {
-            setShowSuccessModal(true);
+            handleConfirm();
         }
     }, [isLoggedIn]);
 
@@ -36,7 +36,6 @@ export default function LoginScreen({ navigation, route }: any) {
                 ],
             });
         }
-        setShowSuccessModal(false);
     };
 
     const getKakaoAuthUrl = () => {
@@ -50,7 +49,7 @@ export default function LoginScreen({ navigation, route }: any) {
         // Use state to tell the backend where to redirect back after processing
         const state = encodeURIComponent(frontendOrigin);
 
-        return `https://kauth.kakao.com/oauth/authorize?client_id=2bc4c5e9fef481cadb721dabddaf85b6&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&state=${state}`;
+        return `https://kauth.kakao.com/oauth/authorize?client_id=2bc4c5e9fef481cadb721dabddaf85b6&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&state=${state}&prompt=login`;
     };
 
     const handleKakaoLogin = () => {

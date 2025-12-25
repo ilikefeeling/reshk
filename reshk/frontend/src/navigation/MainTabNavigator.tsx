@@ -1,7 +1,6 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import HomeScreen from '../screens/HomeScreen';
 import HomePage from '../pages/HomePage';
 import ChatListScreen from '../screens/ChatListScreen';
 import ProfileScreen from '../screens/ProfileScreen';

@@ -7,7 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../utils/api';
 
 // Replace with your backend URL
-const SOCKET_URL = process.env.EXPO_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:3000';
+const SOCKET_URL = process.env.EXPO_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:3002';
 
 export default function ChatScreen({ route, navigation }: any) {
     const { roomId, title } = route.params;

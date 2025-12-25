@@ -20,7 +20,7 @@ const getKakaoAuthUrl = () => {
     const origin = apiBase.endsWith('/api') ? apiBase.slice(0, -4) : apiBase;
     const state = encodeURIComponent(origin);
 
-    return `https://kauth.kakao.com/oauth/authorize?client_id=2bc4c5e9fef481cadb721dabddaf85b6&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&state=${state}`;
+    return `https://kauth.kakao.com/oauth/authorize?client_id=2bc4c5e9fef481cadb721dabddaf85b6&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&state=${state}&prompt=login`;
 };
 
 export default function LoginScreen({ navigation, route }: any) {

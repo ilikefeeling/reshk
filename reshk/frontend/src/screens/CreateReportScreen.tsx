@@ -89,7 +89,7 @@ export default function CreateReportScreen({ navigation }: any) {
             const token = await AsyncStorage.getItem('token');
             if (!token) throw new Error('인증 토큰을 찾을 수 없습니다.');
 
-            const baseURL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3002/api';
+            const baseURL = api.defaults.baseURL || 'http://localhost:3002/api';
             const response = await fetch(`${baseURL}/upload`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` },

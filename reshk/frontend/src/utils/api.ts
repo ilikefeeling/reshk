@@ -7,12 +7,26 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 const getBaseUrl = () => {
     if (Platform.OS === 'web') {
-        // 웹 환경: 로컬이면 3002 포트, 아니면 상위 경로(/api) 사용
-        return window.location.hostname === 'localhost'
-            ? 'http://localhost:3002/api'
-            : '/api';
+        const hostname = window.location.hostname;
+        const protocol = window.location.protocol;
+        const port = window.location.port ? `:${window.location.port}` : '';
+
+        // If localhost, stick to 3002 for backend
+        if (hostname === 'localhost') {
+            return 'http://localhost:3002/api';
+        }
+
+        // If not localhost (e.g., browsing via IP), use the same IP but point to backend port 3002
+        // Unless it's a Vercel/Production deployment where /api is routed by proxy
+        if (hostname.includes('vercel.app') || hostname.includes('github.io')) {
+            return `${protocol}//${hostname}${port}/api`;
+        }
+
+        // Browsing via Local IP (e.g. 192.168.x.x)
+        return `${protocol}//${hostname}:3002/api`;
     }
-    // 모바일 환경: 환경 변수가 있으면 사용, 없으면 로컬 에뮬레이터 주소 사용
+
+    // Native: Preference order: Env Var > PC Lan IP (placeholder) > Emulator Default
     return process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:3002/api';
 };
 
