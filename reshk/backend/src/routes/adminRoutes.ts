@@ -7,7 +7,9 @@ import {
     verifyUserIdentity,
     getCsTickets,
     updateCsTicket,
-    bulkDeleteRequests
+    bulkDeleteRequests,
+    bulkDeleteReports,
+    bulkApproveReports
 } from '../controllers/adminSuiteController';
 import { getPendingReports, approveReport, rejectReport } from '../controllers/reportController';
 import { authenticateToken, isAdmin } from '../middlewares/authMiddleware';
@@ -33,6 +35,8 @@ router.post('/identities/verify', verifyUserIdentity);
 router.get('/reports/pending', getPendingReports);
 router.post('/reports/:id/approve', approveReport);
 router.post('/reports/:id/reject', rejectReport);
+router.delete('/reports/bulk', bulkDeleteReports);
+router.post('/reports/bulk-approve', bulkApproveReports);
 
 // 💬 CS Ticket Management
 router.get('/tickets', getCsTickets);

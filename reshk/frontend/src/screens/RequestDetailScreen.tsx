@@ -8,46 +8,58 @@ import { initialRequests } from '../context/PostContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
+import { useFocusEffect } from '@react-navigation/native';
+
 export default function RequestDetailScreen({ route, navigation }: any) {
     const { id } = route.params;
-    const { user } = useAuth();
+    const { user, isLoggedIn } = useAuth();
     const currentUserId = user?.id;
     const [item, setItem] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [reports, setReports] = useState<any[]>([]);
 
-    useEffect(() => {
-        const fetchDetail = async () => {
-            try {
-                setLoading(true);
-                const response = await api.get(`/requests/${id}`);
-                if (response.data) {
-                    setItem(response.data);
-                } else {
-                    throw new Error('No data');
+    const fetchDetail = React.useCallback(async () => {
+        if (!id) return;
+        try {
+            setLoading(true);
+            console.log(`[DEBUG] RequestDetail: Fetching ID ${id} with cache buster`);
+            // Add timestamp to bypass any caching
+            const response = await api.get(`/requests/${id}?t=${Date.now()}`);
+            if (response.data) {
+                setItem(response.data);
+                if (response.data.userId === currentUserId) {
+                    try {
+                        const reportsRes = await api.get(`/reports/request/${id}?t=${Date.now()}`);
+                        setReports(reportsRes.data);
+                    } catch (err) {
+                        console.log('Failed to fetch reports:', err);
+                    }
                 }
-            } catch (error) {
-                console.log(`API Fetch failed for ID ${id}, checking mock data...`);
-                // Fallback to mock data ONLY if the ID matches mock patterns
-                const fallbackItem = initialRequests.find((r: any) => String(r.id) === String(id)) as any;
-                if (fallbackItem) {
-                    setItem({
-                        ...fallbackItem,
-                        description: fallbackItem.description || `${fallbackItem.title}에 대한 상세 정보입니다.`,
-                        location: fallbackItem.location || '위치 정보 없음',
-                        rewardAmount: fallbackItem.reward ? parseInt(fallbackItem.reward.replace(/[^0-9]/g, '')) : 0,
-                        createdAt: new Date().toISOString(),
-                        category: fallbackItem.category || (fallbackItem.id % 2 === 0 ? 'FOUND' : 'LOST'),
-                        images: fallbackItem.images || []
-                    });
-                } else {
-                    setItem(null);
-                }
-            } finally {
-                setLoading(false);
             }
-        };
-        if (id) fetchDetail();
-    }, [id]);
+        } catch (error: any) {
+            console.log(`API Fetch failed for ID ${id}:`, error.message);
+            const fallbackItem = initialRequests.find((r: any) => String(r.id) === String(id)) as any;
+            if (fallbackItem) {
+                setItem({
+                    ...fallbackItem,
+                    description: fallbackItem.description || `${fallbackItem.title}에 대한 상세 정보입니다.`,
+                    location: fallbackItem.location || '위치 정보 없음',
+                    rewardAmount: fallbackItem.reward ? parseInt(fallbackItem.reward.replace(/[^0-9]/g, '')) : 0,
+                    createdAt: new Date().toISOString(),
+                    category: fallbackItem.category || (fallbackItem.id % 2 === 0 ? 'FOUND' : 'LOST'),
+                    images: fallbackItem.images || []
+                });
+            }
+        } finally {
+            setLoading(false);
+        }
+    }, [id, currentUserId]);
+
+    useFocusEffect(
+        React.useCallback(() => {
+            fetchDetail();
+        }, [fetchDetail])
+    );
 
     if (loading) {
         return (
@@ -163,77 +175,153 @@ export default function RequestDetailScreen({ route, navigation }: any) {
                     <Text style={styles.descriptionText}>
                         {item.description}
                     </Text>
+
+                    {item.userId === currentUserId && reports.filter((r: any) => r.status === 'ACCEPTED').length > 0 && (
+                        <View style={styles.reportsSection}>
+                            <Text style={styles.sectionTitle}>도착한 제보 ({reports.filter((r: any) => r.status === 'ACCEPTED').length})</Text>
+                            {reports.filter((r: any) => r.status === 'ACCEPTED').map((report) => (
+                                <View key={report.id} style={styles.reportCard}>
+                                    <View style={styles.reportHeader}>
+                                        <View style={styles.reporterInfo}>
+                                            <View style={styles.miniAvatar}>
+                                                <Ionicons name="person" size={14} color="#94a3b8" />
+                                            </View>
+                                            <Text style={styles.reporterName}>{report.reporter?.name || 'Helper'}</Text>
+                                        </View>
+                                        <Text style={styles.reportDate}>{new Date(report.createdAt).toLocaleDateString()}</Text>
+                                    </View>
+                                    <Text style={styles.reportText} numberOfLines={2}>{report.description}</Text>
+                                    <View style={styles.reportFooter}>
+                                        <View style={[
+                                            styles.trustBadge,
+                                            report.verificationScore > 0.7 ? styles.trustHigh : styles.trustMid
+                                        ]}>
+                                            <Text style={styles.trustText}>신뢰도 {(report.verificationScore * 100).toFixed(0)}%</Text>
+                                        </View>
+                                        <View style={{ flexDirection: 'row', gap: 8 }}>
+                                            {report.reporterId === currentUserId && (
+                                                <TouchableOpacity
+                                                    style={[styles.chatButton, { backgroundColor: '#3b82f6' }]}
+                                                    onPress={() => navigation.navigate('CreateItemReport', {
+                                                        requestId: item.id,
+                                                        itemTitle: item.title,
+                                                        editingReport: report
+                                                    })}
+                                                >
+                                                    <Text style={styles.chatButtonText}>수정</Text>
+                                                </TouchableOpacity>
+                                            )}
+                                            <TouchableOpacity
+                                                style={styles.chatButton}
+                                                onPress={() => navigation.navigate('Chat', { roomId: null, recipientId: report.reporterId })}
+                                            >
+                                                <Text style={styles.chatButtonText}>채팅하기</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
+                                </View>
+                            ))}
+                        </View>
+                    )}
                 </View>
             </ScrollView>
 
-            <View style={styles.bottomActionArea}>
-                {item.userId === currentUserId ? (
+            <View style={[styles.bottomActionArea, { zIndex: 999, elevation: 10 }]}>
+                {isLoggedIn && item.userId === currentUserId ? (
                     // If current user is the owner
-                    item.status === 'IN_PROGRESS' ? (
+                    <View style={{ flexDirection: 'row', gap: 12 }}>
                         <TouchableOpacity
-                            style={[styles.actionButton, styles.completeButton]}
-                            onPress={async () => {
-                                Alert.alert(
-                                    'Complete Request',
-                                    'Did you successfully get your item back?',
-                                    [
-                                        { text: 'Cancel', style: 'cancel' },
-                                        {
-                                            text: 'Yes, Completed',
-                                            onPress: async () => {
-                                                try {
-                                                    await api.put(`/requests/${item.id}/complete`);
-                                                    Alert.alert('Success', 'Request marked as completed!');
-                                                    navigation.navigate('Main');
-                                                } catch (error) {
-                                                    Alert.alert('Error', 'Failed to complete request');
-                                                }
-                                            }
-                                        }
-                                    ]
-                                );
+                            style={[styles.actionButton, styles.editButton, { flex: 1 }]}
+                            onPress={() => {
+                                console.log('[DEBUG] Edit Request Clicked', {
+                                    currentUserId,
+                                    itemUserId: item.userId,
+                                    category: item.category
+                                });
+                                Alert.alert('디버그', `수정하기 클릭됨 (카테고리: ${item.category})`);
+                                if (item.category === 'FOUND') {
+                                    navigation.navigate('CreateReport', { editingRequest: item });
+                                } else {
+                                    navigation.navigate('CreateRequest', { editingRequest: item });
+                                }
                             }}
                         >
-                            <Text style={styles.actionButtonText}>거래 완료하기</Text>
+                            <Ionicons name="create-outline" size={20} color="white" />
+                            <Text style={styles.actionButtonText}>수정하기</Text>
                         </TouchableOpacity>
-                    ) : item.status === 'COMPLETED' && !item.hasReview ? (
-                        <TouchableOpacity
-                            style={[styles.actionButton, styles.reviewButton]}
-                            onPress={() => navigation.navigate('Review', {
-                                requestId: item.id,
-                                targetUserId: 0,
-                                targetUserName: 'Helper'
-                            })}
-                        >
-                            <Text style={styles.actionButtonText}>후기 작성하기</Text>
-                        </TouchableOpacity>
-                    ) : (
-                        <View style={styles.disabledActionView}>
-                            <Text style={styles.disabledActionText}>진행 중인 거래가 없습니다</Text>
-                        </View>
-                    )
+
+                        {item.status === 'IN_PROGRESS' ? (
+                            <TouchableOpacity
+                                style={[styles.actionButton, styles.completeButton, { flex: 1 }]}
+                                onPress={async () => {
+                                    Alert.alert(
+                                        'Complete Request',
+                                        'Did you successfully get your item back?',
+                                        [
+                                            { text: 'Cancel', style: 'cancel' },
+                                            {
+                                                text: 'Yes, Completed',
+                                                onPress: async () => {
+                                                    try {
+                                                        await api.post(`/requests/${item.id}/complete`);
+                                                        Alert.alert('Success', 'Request marked as completed!');
+                                                        navigation.navigate('Main');
+                                                    } catch (error) {
+                                                        Alert.alert('Error', 'Failed to complete request');
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    );
+                                }}
+                            >
+                                <Text style={styles.actionButtonText}>거래 완료</Text>
+                            </TouchableOpacity>
+                        ) : item.status === 'COMPLETED' && !item.hasReview ? (
+                            <TouchableOpacity
+                                style={[styles.actionButton, styles.reviewButton, { flex: 1 }]}
+                                onPress={() => navigation.navigate('Review', {
+                                    requestId: item.id,
+                                    targetUserId: 0,
+                                    targetUserName: 'Helper'
+                                })}
+                            >
+                                <Text style={styles.actionButtonText}>후기 작성</Text>
+                            </TouchableOpacity>
+                        ) : null}
+                    </View>
                 ) : (
                     // If current user is NOT the owner
-                    isFoundItem ? (
-                        <TouchableOpacity
-                            style={[styles.actionButton, styles.foundActionButton]}
-                            onPress={() => navigation.navigate('Chat', { roomId: null, recipientId: item.userId })}
-                        >
-                            <Text style={styles.actionButtonText}>제보자와 채팅하기</Text>
-                        </TouchableOpacity>
-                    ) : (
-                        <TouchableOpacity
-                            style={[styles.actionButton, styles.lostActionButton]}
-                            onPress={() => navigation.navigate('Payment', {
-                                amount: item.rewardAmount,
-                                title: item.title,
-                                type: 'REWARD',
-                                requestId: item.id
-                            })}
-                        >
-                            <Text style={styles.actionButtonText}>사례금 지급하기 (₩{Number(item.rewardAmount).toLocaleString()})</Text>
-                        </TouchableOpacity>
-                    )
+                    <View style={{ flexDirection: 'row', gap: 12 }}>
+                        {isFoundItem ? (
+                            <TouchableOpacity
+                                style={[styles.actionButton, styles.foundActionButton, { flex: 1 }]}
+                                onPress={() => navigation.navigate('Chat', { roomId: null, recipientId: item.userId })}
+                            >
+                                <Text style={styles.actionButtonText}>주인과 채팅하기</Text>
+                            </TouchableOpacity>
+                        ) : (
+                            <>
+                                <TouchableOpacity
+                                    style={[styles.actionButton, styles.reportButton, { flex: 1 }]}
+                                    onPress={() => navigation.navigate('CreateItemReport', { requestId: item.id, itemTitle: item.title })}
+                                >
+                                    <Text style={styles.actionButtonText}>제보하기</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[styles.actionButton, styles.lostActionButton, { flex: 1 }]}
+                                    onPress={() => navigation.navigate('Payment', {
+                                        amount: item.rewardAmount,
+                                        title: item.title,
+                                        type: 'REWARD',
+                                        requestId: item.id
+                                    })}
+                                >
+                                    <Text style={styles.actionButtonText}>사례금 지급</Text>
+                                </TouchableOpacity>
+                            </>
+                        )}
+                    </View>
                 )}
             </View>
         </SafeAreaView>
@@ -455,6 +543,16 @@ const styles = StyleSheet.create({
     foundActionButton: {
         backgroundColor: '#16a34a',
     },
+    editButton: {
+        backgroundColor: '#3b82f6',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+    },
+    reportButton: {
+        backgroundColor: '#f59e0b',
+    },
     lostActionButton: {
         backgroundColor: '#2563eb',
     },
@@ -466,6 +564,92 @@ const styles = StyleSheet.create({
     },
     disabledActionText: {
         color: '#9ca3af',
+        fontWeight: 'bold',
+    },
+    reportsSection: {
+        marginTop: 8,
+        paddingTop: 24,
+        borderTopWidth: 1,
+        borderTopColor: '#f3f4f6',
+    },
+    sectionTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#1e293b',
+        marginBottom: 16,
+    },
+    reportCard: {
+        backgroundColor: '#f8fafc',
+        borderRadius: 16,
+        padding: 16,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+    },
+    reportHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    reporterInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    miniAvatar: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: '#e2e8f0',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 8,
+    },
+    reporterName: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#475569',
+    },
+    reportDate: {
+        fontSize: 12,
+        color: '#94a3b8',
+    },
+    reportText: {
+        fontSize: 14,
+        color: '#334155',
+        lineHeight: 20,
+        marginBottom: 12,
+    },
+    reportFooter: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    trustBadge: {
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 6,
+    },
+    trustHigh: {
+        backgroundColor: '#dcfce7',
+    },
+    trustMid: {
+        backgroundColor: '#fef3c7',
+    },
+    trustText: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: '#166534',
+    },
+    chatButton: {
+        backgroundColor: '#3b82f6',
+        paddingHorizontal: 16,
+        paddingVertical: 6,
+        borderRadius: 8,
+    },
+    chatButtonText: {
+        color: '#ffffff',
+        fontSize: 13,
         fontWeight: 'bold',
     },
 });

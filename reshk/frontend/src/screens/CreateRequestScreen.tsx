@@ -7,8 +7,11 @@ import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../utils/api';
+import { usePost } from '../context/PostContext';
 
-export default function CreateRequestScreen({ navigation }: any) {
+export default function CreateRequestScreen({ route, navigation }: any) {
+    const editingRequest = route?.params?.editingRequest;
+
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [reward, setReward] = useState('');
@@ -34,8 +37,48 @@ export default function CreateRequestScreen({ navigation }: any) {
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showTimePicker, setShowTimePicker] = useState(false);
     const [showDepositModal, setShowDepositModal] = useState(false);
+    const { refreshRequests } = usePost();
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [showApprovalWaitModal, setShowApprovalWaitModal] = useState(false);
+    const [showEditSuccessModal, setShowEditSuccessModal] = useState(false);
+
+    useEffect(() => {
+        if (editingRequest) {
+            setTitle(editingRequest.title);
+            // Description might contain prefix, try to strip it or just use it
+            let desc = editingRequest.description || '';
+            if (desc.includes('[분실물 의뢰]')) {
+                // Try to extract original description
+                const parts = desc.split('\n\n');
+                if (parts.length > 1) desc = parts.slice(1).join('\n\n');
+            }
+            setDescription(desc);
+            setReward(editingRequest.rewardAmount?.toString() || '');
+            setLocationName(editingRequest.location || '');
+            setSelectedLocation({
+                latitude: editingRequest.latitude,
+                longitude: editingRequest.longitude
+            });
+            setSelectedImages(editingRequest.images || []);
+
+            if (editingRequest.createdAt) {
+                const date = new Date(editingRequest.createdAt);
+                setSelectedYear(date.getFullYear());
+                setSelectedMonth(date.getMonth() + 1);
+                setSelectedDay(date.getDate());
+                setSelectedHour(date.getHours());
+                setSelectedMinute(date.getMinutes());
+            }
+        } else {
+            // 신규 등록 시 상태 초기화
+            setTitle('');
+            setDescription('');
+            setReward('');
+            setLocationName('');
+            setSelectedLocation(null);
+            setSelectedImages([]);
+        }
+    }, [editingRequest]);
 
     const formatCurrency = (val: string) => {
         const num = val.replace(/[^0-9]/g, '');
@@ -99,8 +142,14 @@ export default function CreateRequestScreen({ navigation }: any) {
     const uploadImages = async (imageUris: string[]): Promise<any[]> => {
         try {
             const formData = new FormData();
-            for (let i = 0; i < imageUris.length; i++) {
-                const uri = imageUris[i];
+            // Separating already uploaded images (URLs) from new ones (uris)
+            const newImages = imageUris.filter(uri => uri.startsWith('file:') || uri.startsWith('content:') || uri.startsWith('http://localhost') || uri.startsWith('http://10.0.2.2'));
+            const alreadyUploaded = imageUris.filter(uri => !newImages.includes(uri));
+
+            if (newImages.length === 0) return alreadyUploaded.map(url => ({ url, metadata: null }));
+
+            for (let i = 0; i < newImages.length; i++) {
+                const uri = newImages[i];
                 const filename = uri.split('/').pop() || `image_${i}.jpg`;
                 const match = /\.(\w+)$/.exec(filename);
                 const type = match ? `image/${match[1]}` : 'image/jpeg';
@@ -124,24 +173,86 @@ export default function CreateRequestScreen({ navigation }: any) {
             });
             if (!response.ok) throw new Error('이미지 업로드 실패');
             const data = await response.json();
-            return data.data;
+            return [...alreadyUploaded.map(url => ({ url, metadata: null })), ...data.data];
         } catch (error) {
             console.error('Upload images error:', error);
             throw error;
         }
     };
 
-    const handleSubmit = async () => {
-        if (!title || !description || !reward || !locationName) {
-            Alert.alert('필수 입력 누락', '모든 필수 정보를 입력해주세요.');
-            return;
-        }
-        setShowDepositModal(true);
-    };
-
     const calculateDeposit = (amount: number) => {
         if (amount <= 100000) return amount;
         return Math.floor(amount * 0.1);
+    };
+
+    const handleConfirmUpdate = async () => {
+        try {
+            if (!editingRequest?.id) {
+                Alert.alert('오류', '게시물 정보를 찾을 수 없습니다.');
+                return;
+            }
+
+            setLoading(true);
+            let uploadedData: any[] = [];
+            if (selectedImages.length > 0) {
+                uploadedData = await uploadImages(selectedImages);
+            }
+
+            const imageUrls = uploadedData.map(d => d.url);
+            const metadataList = uploadedData.map(d => d.metadata).filter(m => m !== null);
+
+            const formattedDate = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')} ${String(selectedHour).padStart(2, '0')}:${String(selectedMinute).padStart(2, '0')}`;
+            const rewardValue = Number(reward.replace(/[^0-9]/g, '')) || 0;
+
+            await api.put(`/requests/${editingRequest.id}`, {
+                title,
+                description: `[분실물 의뢰]\n분실 일시: ${formattedDate}\n\n${description}`,
+                rewardAmount: rewardValue,
+                location: locationName,
+                latitude: selectedLocation?.latitude,
+                longitude: selectedLocation?.longitude,
+                images: imageUrls,
+                metadata: metadataList,
+            });
+
+            await refreshRequests();
+            setShowEditSuccessModal(true);
+        } catch (error: any) {
+            const detail = error.response?.data?.message || error.message;
+            Alert.alert('오류', `수정 중 문제가 발생했습니다: ${detail}`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSubmit = async () => {
+        try {
+            console.log('[DEBUG] handleSubmit clicked');
+            if (!title.trim()) {
+                Alert.alert('알림', '제목을 입력해주세요.');
+                return;
+            }
+            if (!description.trim()) {
+                Alert.alert('알림', '설명을 입력해주세요.');
+                return;
+            }
+            if (!reward || Number(reward) <= 0) {
+                Alert.alert('알림', '사례금을 올바르게 입력해주세요.');
+                return;
+            }
+            if (!locationName) {
+                Alert.alert('알림', '위치를 선택해주세요.');
+                return;
+            }
+
+            if (editingRequest) {
+                await handleConfirmUpdate();
+            } else {
+                setShowDepositModal(true);
+            }
+        } catch (error: any) {
+            Alert.alert('오류', `처리 중 오류가 발생했습니다.`);
+        }
     };
 
     const handleConfirmDeposit = async () => {
@@ -156,8 +267,15 @@ export default function CreateRequestScreen({ navigation }: any) {
             const metadataList = uploadedData.map(d => d.metadata).filter(m => m !== null);
 
             const formattedDate = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')} ${String(selectedHour).padStart(2, '0')}:${String(selectedMinute).padStart(2, '0')}`;
-            const rewardValue = Number(reward);
+            const rewardValue = Number(reward.replace(/[^0-9]/g, '')) || 0;
             const depositValue = calculateDeposit(rewardValue);
+
+            console.log('[DEBUG] Sending /requests POST with:', {
+                title,
+                rewardAmount: rewardValue,
+                depositAmount: depositValue,
+                status: 'PENDING_DEPOSIT'
+            });
 
             await api.post('/requests', {
                 category: 'LOST',
@@ -170,14 +288,15 @@ export default function CreateRequestScreen({ navigation }: any) {
                 longitude: selectedLocation?.longitude,
                 images: imageUrls,
                 metadata: metadataList,
-                status: 'PENDING_DEPOSIT'
+                status: 'PENDING_DEPOSIT' // 의뢰는 입금 대기 상태
             });
 
             setShowDepositModal(false);
             setShowApprovalWaitModal(true);
         } catch (error: any) {
-            console.error(error);
-            Alert.alert('오류', error.message || '등록에 실패했습니다.');
+            console.error('[DEBUG] Registration Error:', error.response?.data || error.message);
+            const errMsg = error.response?.data?.message || error.message || '등록에 실패했습니다.';
+            Alert.alert('등록 오류', errMsg);
         } finally {
             setLoading(false);
         }
@@ -327,7 +446,9 @@ export default function CreateRequestScreen({ navigation }: any) {
                             onPress={handleSubmit}
                             disabled={loading}
                         >
-                            <Text style={styles.submitButtonText}>{loading ? '의뢰 등록 중...' : '의뢰 및 보상금 예치하기'}</Text>
+                            <Text style={styles.submitButtonText}>
+                                {loading ? (editingRequest ? '수정 중...' : '의뢰 등록 중...') : (editingRequest ? '의뢰 수정하기' : '의뢰 및 보상금 예치하기')}
+                            </Text>
                         </TouchableOpacity>
                     </View>
 
@@ -464,23 +585,48 @@ export default function CreateRequestScreen({ navigation }: any) {
                 <View style={styles.modalOverlay}>
                     <View style={styles.statusModalContent}>
                         <View style={styles.statusIconWrapper}>
-                            <Ionicons name="time" size={60} color="#2563eb" />
+                            <Ionicons name="time" size={60} color="#4f46e5" />
                         </View>
-                        <Text style={styles.statusModalTitle}>관리자 승인 대기</Text>
+                        <Text style={styles.statusModalTitle}>보상금 입금 확인 중</Text>
                         <Text style={styles.statusModalDesc}>
-                            의뢰 등록이 완료되었습니다!{"\n"}
-                            사례금 입금이 확인되면{"\n"}
-                            <Text style={styles.highlightText}>관리자 승인 후 즉시 리스트에 노출</Text>됩니다.{"\n\n"}
-                            영업시간 기준 보통 1시간 이내에{"\n"}승인 처리가 완료됩니다.
+                            의뢰 등록 접수가 완료되었습니다!{"\n\n"}
+                            설정하신 <Text style={styles.highlightText}>사례금 입금이 확인</Text>되면{"\n"}
+                            관리자 승인 후 즉시 리스트 최상단에 노출됩니다.{"\n\n"}
+                            <Text style={styles.subInfoText}>* 영업시간 기준 보통 1시간 이내 처리</Text>
                         </Text>
                         <TouchableOpacity
-                            style={styles.modalConfirmButton}
+                            style={styles.modalPrimaryButton}
                             onPress={() => {
                                 setShowApprovalWaitModal(false);
                                 navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
                             }}
                         >
-                            <Text style={styles.modalConfirmText}>메인으로 이동</Text>
+                            <Text style={styles.modalPrimaryText}>확인</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Edit Success Modal */}
+            <Modal visible={showEditSuccessModal} transparent animationType="fade">
+                <View style={styles.modalOverlay}>
+                    <View style={styles.statusModalContent}>
+                        <View style={[styles.statusIconWrapper, { backgroundColor: '#f0fdf4' }]}>
+                            <Ionicons name="checkmark-circle" size={60} color="#22c55e" />
+                        </View>
+                        <Text style={styles.statusModalTitle}>의뢰 수정 완료</Text>
+                        <Text style={styles.statusModalDesc}>
+                            의뢰 게시글이 성공적으로 수정되었습니다!{"\n"}
+                            변경된 내용은 즉시 목록에 반영됩니다.
+                        </Text>
+                        <TouchableOpacity
+                            style={[styles.modalPrimaryButton, { backgroundColor: '#22c55e' }]}
+                            onPress={() => {
+                                setShowEditSuccessModal(false);
+                                navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
+                            }}
+                        >
+                            <Text style={styles.modalPrimaryText}>확인</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -777,6 +923,8 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         padding: 20,
+        zIndex: 10000,
+        elevation: 10,
     },
     modalContent: {
         backgroundColor: '#ffffff',
@@ -790,6 +938,24 @@ const styles = StyleSheet.create({
         marginBottom: 24,
         textAlign: 'center',
         color: '#1f2937',
+    },
+    subInfoText: {
+        fontSize: 12,
+        color: '#6b7280',
+        marginTop: 8,
+    },
+    modalPrimaryButton: {
+        backgroundColor: '#4f46e5',
+        paddingVertical: 14,
+        paddingHorizontal: 40,
+        borderRadius: 16,
+        width: '100%',
+        alignItems: 'center',
+    },
+    modalPrimaryText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 16,
     },
     wheelContainer: {
         flexDirection: 'row',
@@ -837,6 +1003,8 @@ const styles = StyleSheet.create({
         padding: 24,
         paddingBottom: 48,
         width: '100%',
+        zIndex: 10001,
+        elevation: 11,
     },
     bottomSheetHeader: {
         flexDirection: 'row',

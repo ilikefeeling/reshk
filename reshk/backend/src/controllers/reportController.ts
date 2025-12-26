@@ -167,7 +167,9 @@ export const updateReportStatus = async (req: AuthRequest, res: Response) => {
 export const getPendingReports = async (req: AuthRequest, res: Response) => {
     try {
         const reports = await prisma.report.findMany({
-            where: { status: 'PENDING' },
+            where: {
+                status: { in: ['PENDING', 'ACCEPTED'] }
+            },
             include: {
                 reporter: { select: { id: true, name: true, profileImage: true } },
                 request: {
@@ -224,5 +226,105 @@ export const rejectReport = async (req: AuthRequest, res: Response) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// Update an existing report
+export const updateReport = async (req: AuthRequest, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { description, images, location, metadata } = req.body;
+        const reporterId = req.user?.userId;
+
+        if (!reporterId) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        const report = await prisma.report.findUnique({
+            where: { id: Number(id) },
+            include: { request: true }
+        });
+
+        if (!report) {
+            return res.status(404).json({ message: 'Report not found' });
+        }
+
+        if (report.reporterId !== reporterId) {
+            return res.status(403).json({ message: 'You do not have permission to edit this report' });
+        }
+
+        // Only allow editing if status is PENDING
+        if (report.status !== 'PENDING') {
+            return res.status(400).json({ message: 'Cannot edit a report that has already been accepted or rejected' });
+        }
+
+        let lat = report.latitude;
+        let lng = report.longitude;
+        let capturedAt = report.capturedAt;
+        let finalVerificationScore = report.verificationScore;
+        let aiScore = report.aiScore;
+
+        const metadataChanged = metadata !== undefined && JSON.stringify(metadata) !== JSON.stringify(report.metadata);
+        const imagesChanged = images !== undefined && JSON.stringify(images) !== JSON.stringify(report.images);
+
+        if (metadataChanged || imagesChanged) {
+            // Re-run verification logic
+            const currentMetadata = metadata ?? report.metadata;
+            const currentImages = images ?? report.images;
+            const request = report.request;
+
+            let verificationScore = 0.5; // Base score
+
+            if (currentMetadata && Array.isArray(currentMetadata) && currentMetadata.length > 0) {
+                const firstPhotoMeta = currentMetadata[0];
+                if (firstPhotoMeta.latitude && firstPhotoMeta.longitude) {
+                    lat = firstPhotoMeta.latitude;
+                    lng = firstPhotoMeta.longitude;
+                    if (request.latitude !== null && request.longitude !== null && lat !== null && lng !== null) {
+                        const dist = calculateDistance(lat, lng, Number(request.latitude), Number(request.longitude));
+                        if (dist < 1) verificationScore += 0.2;
+                        else if (dist > 50) verificationScore -= 0.3;
+                    }
+                }
+                if (firstPhotoMeta.CreateDate || firstPhotoMeta.DateTimeOriginal) {
+                    capturedAt = new Date(firstPhotoMeta.CreateDate || firstPhotoMeta.DateTimeOriginal);
+                    if (capturedAt > request.createdAt) verificationScore += 0.1;
+                    else verificationScore -= 0.1;
+                }
+            }
+            verificationScore = Math.max(0, Math.min(1, verificationScore));
+
+            if (imagesChanged && currentImages && currentImages.length > 0 && request.images && request.images.length > 0) {
+                try {
+                    aiScore = await analyzeImageSimilarity(request.images[0], currentImages[0]);
+                } catch (err) {
+                    console.error('AI Similarity update failed:', err);
+                    aiScore = 0;
+                }
+            }
+
+            finalVerificationScore = (verificationScore * 0.4) + ((aiScore || 0) * 0.6);
+        }
+
+        const updatedReport = await prisma.report.update({
+            where: { id: Number(id) },
+            data: {
+                description: description ?? report.description,
+                images: images ?? report.images,
+                location: location ?? report.location,
+                metadata: metadata ?? report.metadata,
+                latitude: lat,
+                longitude: lng,
+                capturedAt: capturedAt,
+                verificationScore: finalVerificationScore,
+                aiScore: aiScore,
+                // Status remains PENDING during edit
+            },
+        });
+
+        res.status(200).json(updatedReport);
+    } catch (error: any) {
+        console.error('[ERROR] updateReport:', error);
+        res.status(500).json({ message: 'Server error', details: error.message });
     }
 };

@@ -24,7 +24,13 @@ export const getAdminRequests = async (req: AuthRequest, res: Response) => {
     try {
         const { status, category, keyword } = req.query;
         const where: any = {};
-        if (status) where.status = String(status);
+
+        // If status is provided, filter by it. 
+        // If not (default), show all statuses to prevent items from "disappearing" after approval
+        if (status && status !== 'ALL') {
+            where.status = String(status);
+        }
+
         if (category) where.category = String(category);
         if (keyword) {
             where.OR = [
@@ -190,14 +196,156 @@ export const bulkDeleteRequests = async (req: AuthRequest, res: Response) => {
 
         const numericIds = ids.map(id => Number(id));
 
-        // Delete multiple
-        const result = await prisma.request.deleteMany({
-            where: { id: { in: numericIds } }
+        // Delete with transaction to handle relations
+        const result = await prisma.$transaction(async (tx) => {
+            console.log('[BULK_DELETE_REQ] Step 1: Deleting Reviews...');
+            await tx.review.deleteMany({
+                where: { requestId: { in: numericIds } }
+            });
+
+            console.log('[BULK_DELETE_REQ] Step 2: Handling Reports...');
+            const reports = await tx.report.findMany({
+                where: { requestId: { in: numericIds } },
+                select: { id: true }
+            });
+            const reportIds = reports.map(r => r.id);
+
+            if (reportIds.length > 0) {
+                console.log(`[BULK_DELETE_REQ] Nullifying report refs in Transactions for IDs: ${reportIds}`);
+                await tx.transaction.updateMany({
+                    where: { reportId: { in: reportIds } },
+                    data: { reportId: null }
+                });
+                console.log('[BULK_DELETE_REQ] Deleting Reports...');
+                await tx.report.deleteMany({
+                    where: { id: { in: reportIds } }
+                });
+            }
+
+            console.log('[BULK_DELETE_REQ] Step 3: Nullifying Request refs in Transactions...');
+            await tx.transaction.updateMany({
+                where: { requestId: { in: numericIds } },
+                data: { requestId: null }
+            });
+
+            console.log('[BULK_DELETE_REQ] Step 4: Nullifying Request refs in CsTickets...');
+            await tx.csTicket.updateMany({
+                where: { requestId: { in: numericIds } },
+                data: { requestId: null }
+            });
+
+            console.log('[BULK_DELETE_REQ] Step 5: Handling ChatRooms...');
+            const chatRooms = await tx.chatRoom.findMany({
+                where: { requestId: { in: numericIds } },
+                select: { id: true }
+            });
+            const chatRoomIds = chatRooms.map(cr => cr.id);
+
+            if (chatRoomIds.length > 0) {
+                console.log(`[BULK_DELETE_REQ] Deleting Messages for Rooms: ${chatRoomIds}`);
+                await tx.message.deleteMany({
+                    where: { chatRoomId: { in: chatRoomIds } }
+                });
+                console.log('[BULK_DELETE_REQ] Deleting ChatRooms...');
+                await tx.chatRoom.deleteMany({
+                    where: { id: { in: chatRoomIds } }
+                });
+            }
+
+            console.log('[BULK_DELETE_REQ] Step 6: Finally deleting Requests...');
+            return await tx.request.deleteMany({
+                where: { id: { in: numericIds } }
+            });
         });
 
         // Log the action
         await createAuditLog(adminId, 'BULK_DELETE_REQUESTS', 'Request', 0, {
             deletedCount: result.count,
+            ids: numericIds
+        });
+
+        res.status(200).json({ success: true, count: result.count });
+    } catch (error: any) {
+        console.error('Bulk delete requests error:', error);
+        res.status(500).json({
+            message: 'Server error',
+            details: error.message,
+            code: error.code
+        });
+    }
+};
+
+/**
+ * Bulk Delete Reports
+ */
+export const bulkDeleteReports = async (req: AuthRequest, res: Response) => {
+    try {
+        const { ids } = req.body;
+        const adminId = req.user?.userId;
+
+        if (!adminId) return res.status(401).json({ message: 'Unauthorized' });
+        if (!ids || !Array.isArray(ids) || ids.length === 0) {
+            return res.status(400).json({ message: 'No IDs provided' });
+        }
+
+        const numericIds = ids.map(id => Number(id));
+
+        const result = await prisma.$transaction(async (tx) => {
+            // Nullify report references in Transactions
+            await tx.transaction.updateMany({
+                where: { reportId: { in: numericIds } },
+                data: { reportId: null }
+            });
+
+            // Delete Reports
+            return await tx.report.deleteMany({
+                where: { id: { in: numericIds } }
+            });
+        });
+
+        await createAuditLog(adminId, 'BULK_DELETE_REPORTS', 'Report', 0, {
+            deletedCount: result.count,
+            ids: numericIds
+        });
+
+        res.status(200).json({ success: true, count: result.count });
+    } catch (error: any) {
+        console.error('Bulk delete reports error:', error);
+        res.status(500).json({
+            message: 'Server error',
+            details: error.message,
+            code: error.code
+        });
+    }
+};
+
+/**
+ * Bulk Approve Reports
+ */
+export const bulkApproveReports = async (req: AuthRequest, res: Response) => {
+    try {
+        const { ids } = req.body;
+        const adminId = req.user?.userId;
+
+        if (!adminId) return res.status(401).json({ message: 'Unauthorized' });
+        if (!ids || !Array.isArray(ids) || ids.length === 0) {
+            return res.status(400).json({ message: 'No IDs provided' });
+        }
+
+        const numericIds = ids.map(id => Number(id));
+
+        const result = await prisma.report.updateMany({
+            where: {
+                id: { in: numericIds },
+                status: 'PENDING'
+            },
+            data: {
+                status: 'ACCEPTED'
+            }
+        });
+
+        await createAuditLog(adminId, 'BULK_APPROVE_REPORTS', 'Report', 0, {
+            approvedCount: result.count,
             ids: numericIds
         });
 

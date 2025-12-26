@@ -8,6 +8,15 @@ export const createRequest = async (req: AuthRequest, res: Response) => {
         const { category, title, description, rewardAmount, depositAmount, location, images, latitude, longitude, status, metadata } = req.body;
         const userId = req.user?.userId;
 
+        console.log('[DEBUG] createRequest called:', {
+            userId,
+            category,
+            title,
+            rewardAmount,
+            depositAmount,
+            status
+        });
+
         if (!userId) {
             return res.status(401).json({ message: 'Unauthorized' });
         }
@@ -18,15 +27,12 @@ export const createRequest = async (req: AuthRequest, res: Response) => {
         }
 
         // Validate category
-        const validCategories = ['LOST', 'FOUND', 'REWARD', 'REPORT']; // Adjust based on business rules
+        const validCategories = ['LOST', 'FOUND', 'REWARD', 'REPORT'];
         if (!validCategories.includes(category)) {
             return res.status(400).json({ message: 'Invalid category' });
         }
 
-        // Calculate required deposit based on business rules:
-        // <= 100,000 -> 100%
-        // > 100,000 -> 10%
-        const reward = Number(rewardAmount);
+        const reward = Number(rewardAmount) || 0;
         let calculatedDeposit = 0;
         if (reward <= 100000) {
             calculatedDeposit = reward;
@@ -42,19 +48,40 @@ export const createRequest = async (req: AuthRequest, res: Response) => {
                 description,
                 rewardAmount: reward,
                 depositAmount: calculatedDeposit,
-                location,
+                location: location || 'Unknown',
                 latitude: latitude ? Number(latitude) : null,
                 longitude: longitude ? Number(longitude) : null,
                 images: images || [],
                 metadata: metadata || null,
-                status: status || 'OPEN', // Use status from body if provided (TEMPORARY BYPASS)
+                status: status || 'OPEN',
             },
         });
 
+        // 10% 예치금이 필요한 경우 트랜잭션 기록 생성
+        if (request.status === 'PENDING_DEPOSIT') {
+            await prisma.transaction.create({
+                data: {
+                    userId,
+                    requestId: request.id,
+                    amount: calculatedDeposit,
+                    type: 'DEPOSIT',
+                    status: 'PENDING'
+                }
+            });
+        }
+
         res.status(201).json(request);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error' });
+    } catch (error: any) {
+        console.error('[ERROR] createRequest details:', {
+            message: error.message,
+            stack: error.stack,
+            name: error.name,
+            code: error.code // Prisma error code
+        });
+        res.status(500).json({
+            message: 'Server error',
+            details: error.message
+        });
     }
 };
 
@@ -76,11 +103,15 @@ export const getRequests = async (req: AuthRequest, res: Response) => {
 
         const whereClause: any = {};
 
-        // 상태 필터 (기본값: OPEN)
-        if (status) {
+        // 상태 필터 (기본값: OPEN, APPROVED, IN_PROGRESS 등 보이는 상태들)
+        if (status && status !== 'ALL') {
             whereClause.status = String(status);
         } else {
-            whereClause.status = 'OPEN';
+            // 기본적으로 보여줄 상태들
+            // 승인된 제보(ACCEPTED)도 목록에 노출될 수 있도록 추가
+            whereClause.status = {
+                in: ['OPEN', 'APPROVED', 'IN_PROGRESS', 'PENDING', 'PENDING_DEPOSIT', 'ACCEPTED']
+            };
         }
 
         // 카테고리 필터
@@ -126,17 +157,20 @@ export const getRequests = async (req: AuthRequest, res: Response) => {
         console.log('Final whereClause:', JSON.stringify(whereClause, null, 2));
 
         const requests = await prisma.request.findMany({
-            where: {
-                ...whereClause,
-                // Ensure only visible items are shown if requested without specific filters
-                ...(Object.keys(whereClause).length === 0 ? { status: 'OPEN' } : {})
-            },
+            where: whereClause,
             orderBy,
             include: {
                 user: {
-                    select: { id: true, name: true, profileImage: true },
-                },
-            },
+                    select: {
+                        id: true,
+                        name: true,
+                        profileImage: true,
+                        rating: true,
+                        reviewCount: true,
+                        identityStatus: true
+                    }
+                }
+            }
         });
 
         res.status(200).json(requests);
@@ -343,13 +377,26 @@ export const approveRequest = async (req: AuthRequest, res: Response) => {
             return res.status(404).json({ message: 'Request not found' });
         }
 
-        if (request.status !== 'PENDING_DEPOSIT') {
-            return res.status(400).json({ message: 'Request is not in PENDING_DEPOSIT status' });
+        if (request.status !== 'PENDING_DEPOSIT' && request.status !== 'PENDING') {
+            return res.status(400).json({ message: 'Request is not in a pending status' });
         }
 
         const updated = await prisma.request.update({
             where: { id: Number(id) },
-            data: { status: 'OPEN' },
+            data: {
+                status: 'OPEN',
+                createdAt: new Date() // 최신 등록 순서 보장을 위해 시간 갱신
+            },
+        });
+
+        // 대기 중인 트랜잭션이 있다면 같이 완료 처리
+        await prisma.transaction.updateMany({
+            where: {
+                requestId: Number(id),
+                type: 'DEPOSIT',
+                status: 'PENDING'
+            },
+            data: { status: 'COMPLETED' }
         });
 
         res.status(200).json(updated);
@@ -365,9 +412,14 @@ export const getAdminStats = async (req: AuthRequest, res: Response) => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        const [totalRequests, pendingRequests, todayRequests, totalRevenue] = await Promise.all([
+        const [totalRequests, pendingRequests, pendingReports, todayRequests, totalRevenue] = await Promise.all([
             prisma.request.count(),
-            prisma.request.count({ where: { status: 'PENDING_DEPOSIT' } }),
+            prisma.request.count({
+                where: { status: { in: ['PENDING_DEPOSIT', 'PENDING'] } }
+            }),
+            prisma.report.count({
+                where: { status: 'PENDING' }
+            }),
             prisma.request.count({ where: { createdAt: { gte: today } } }),
             prisma.request.aggregate({
                 _sum: { depositAmount: true },
@@ -377,7 +429,8 @@ export const getAdminStats = async (req: AuthRequest, res: Response) => {
 
         res.status(200).json({
             total: totalRequests,
-            pending: pendingRequests,
+            pending: pendingRequests + pendingReports,
+            pendingReports: pendingReports, // Separate count for detailed display
             today: todayRequests,
             revenue: totalRevenue._sum.depositAmount || 0,
             growth: 12.5 // Placeholder for growth percentage
@@ -400,9 +453,12 @@ export const bulkApproveRequests = async (req: AuthRequest, res: Response) => {
         const result = await prisma.request.updateMany({
             where: {
                 id: { in: ids.map(Number) },
-                status: 'PENDING_DEPOSIT'
+                status: { in: ['PENDING_DEPOSIT', 'PENDING'] }
             },
-            data: { status: 'OPEN' }
+            data: {
+                status: 'OPEN',
+                createdAt: new Date() // 최신 등록 순서 보장을 위해 시간 갱신
+            }
         });
 
         res.status(200).json({
@@ -412,5 +468,66 @@ export const bulkApproveRequests = async (req: AuthRequest, res: Response) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// Update an existing request
+export const updateRequest = async (req: AuthRequest, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { title, description, rewardAmount, location, images, latitude, longitude, metadata } = req.body;
+        const userId = req.user?.userId;
+
+        if (!userId) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        const request = await prisma.request.findUnique({
+            where: { id: Number(id) }
+        });
+
+        if (!request) {
+            return res.status(404).json({ message: 'Request not found' });
+        }
+
+        if (request.userId !== userId) {
+            return res.status(403).json({ message: 'You do not have permission to edit this request' });
+        }
+
+        // Only allow editing if status is valid for edits (e.g., OPEN, PENDING_DEPOSIT)
+        if (request.status === 'COMPLETED' || request.status === 'CANCELLED') {
+            return res.status(400).json({ message: 'Cannot edit a completed or cancelled request' });
+        }
+
+        const reward = rewardAmount !== undefined ? Number(rewardAmount) : Number(request.rewardAmount);
+        let calculatedDeposit = Number(request.depositAmount);
+
+        if (rewardAmount !== undefined) {
+            if (reward <= 100000) {
+                calculatedDeposit = reward;
+            } else {
+                calculatedDeposit = Math.floor(reward * 0.1);
+            }
+        }
+
+        const updatedRequest = await prisma.request.update({
+            where: { id: Number(id) },
+            data: {
+                title: title ?? request.title,
+                description: description ?? request.description,
+                rewardAmount: reward,
+                depositAmount: calculatedDeposit,
+                location: location ?? request.location,
+                latitude: latitude !== undefined ? Number(latitude) : request.latitude,
+                longitude: longitude !== undefined ? Number(longitude) : request.longitude,
+                images: images ?? request.images,
+                metadata: metadata ?? request.metadata,
+            },
+        });
+
+        res.status(200).json(updatedRequest);
+    } catch (error: any) {
+        console.error('[ERROR] updateRequest:', error);
+        res.status(500).json({ message: 'Server error', details: error.message });
     }
 };

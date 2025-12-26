@@ -9,27 +9,27 @@ import { useIsFocused } from '@react-navigation/native';
 
 const { width } = Dimensions.get('window');
 
+import { useFocusEffect } from '@react-navigation/native';
+
+import { usePost } from '../context/PostContext';
+
 export default function HomeScreen({ navigation }: any) {
-    const [requests, setRequests] = useState([]);
+    const { requests, refreshRequests } = usePost();
     const [refreshing, setRefreshing] = useState(false);
     const [viewMode, setViewMode] = useState<'LIST' | 'MAP'>('LIST');
     const [location, setLocation] = useState<Location.LocationObject | null>(null);
-    const isFocused = useIsFocused();
-
-    const fetchRequests = async () => {
-        try {
-            const response = await api.get('/requests');
-            setRequests(response.data);
-        } catch (error: any) {
-            console.error('HomeScreen Fetch Error:', error.message);
-        }
-    };
 
     const onRefresh = async () => {
         setRefreshing(true);
-        await fetchRequests();
+        await refreshRequests();
         setRefreshing(false);
     };
+
+    useFocusEffect(
+        React.useCallback(() => {
+            refreshRequests();
+        }, [refreshRequests])
+    );
 
     useEffect(() => {
         (async () => {
@@ -39,16 +39,10 @@ export default function HomeScreen({ navigation }: any) {
                 return;
             }
 
-            let location = await Location.getCurrentPositionAsync({});
-            setLocation(location);
+            let loc = await Location.getCurrentPositionAsync({});
+            setLocation(loc);
         })();
     }, []);
-
-    useEffect(() => {
-        if (isFocused) {
-            fetchRequests();
-        }
-    }, [isFocused]);
 
     return (
         <SafeAreaView style={styles.safeArea}>

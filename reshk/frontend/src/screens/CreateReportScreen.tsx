@@ -7,13 +7,16 @@ import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../utils/api';
+import { usePost } from '../context/PostContext';
 
-export default function CreateReportScreen({ navigation }: any) {
+export default function CreateReportScreen({ route, navigation }: any) {
+    const editingRequest = route?.params?.editingRequest;
+
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [locationName, setLocationName] = useState('');
-    const [foundDate, setFoundDate] = useState(new Date().toISOString().split('T')[0]); // Simple date for now
-    const [keepingMethod, setKeepingMethod] = useState('DIRECT'); // DIRECT or POLICE
+    const [foundDate, setFoundDate] = useState(new Date().toISOString().split('T')[0]);
+    const [keepingMethod, setKeepingMethod] = useState('DIRECT');
     const [loading, setLoading] = useState(false);
 
     // Map State
@@ -23,6 +26,42 @@ export default function CreateReportScreen({ navigation }: any) {
 
     // Image State
     const [selectedImages, setSelectedImages] = useState<string[]>([]);
+
+    useEffect(() => {
+        if (editingRequest) {
+            setTitle(editingRequest.title);
+            let desc = editingRequest.description || '';
+            if (desc.includes('[습득물 신고]')) {
+                const parts = desc.split('\n\n');
+                if (parts.length > 1) {
+                    desc = parts.slice(1).join('\n\n');
+                    // Try to extract keepingMethod
+                    if (parts[0].includes('경찰서/데스크 인계')) setKeepingMethod('POLICE');
+                    else setKeepingMethod('DIRECT');
+
+                    // Try to extract date
+                    const matches = parts[0].match(/습득 일시: ([\d-]+)/);
+                    if (matches) setFoundDate(matches[1]);
+                }
+            }
+            setDescription(desc);
+            setLocationName(editingRequest.location || '');
+            setSelectedLocation({
+                latitude: editingRequest.latitude,
+                longitude: editingRequest.longitude
+            });
+            setSelectedImages(editingRequest.images || []);
+        } else {
+            // 신규 등록 시 상태 초기화
+            setTitle('');
+            setDescription('');
+            setLocationName('');
+            setFoundDate(new Date().toISOString().split('T')[0]);
+            setKeepingMethod('DIRECT');
+            setSelectedLocation(null);
+            setSelectedImages([]);
+        }
+    }, [editingRequest]);
 
     useEffect(() => {
         (async () => {
@@ -72,8 +111,13 @@ export default function CreateReportScreen({ navigation }: any) {
     const uploadImages = async (imageUris: string[]): Promise<any[]> => {
         try {
             const formData = new FormData();
-            for (let i = 0; i < imageUris.length; i++) {
-                const uri = imageUris[i];
+            const newImages = imageUris.filter(uri => uri.startsWith('file:') || uri.startsWith('content:') || uri.startsWith('http://localhost') || uri.startsWith('http://10.0.2.2'));
+            const alreadyUploaded = imageUris.filter(uri => !newImages.includes(uri));
+
+            if (newImages.length === 0) return alreadyUploaded.map(url => ({ url, metadata: null }));
+
+            for (let i = 0; i < newImages.length; i++) {
+                const uri = newImages[i];
                 const filename = uri.split('/').pop() || `image_${i}.jpg`;
                 const match = /\.(\w+)$/.exec(filename);
                 const type = match ? `image/${match[1]}` : 'image/jpeg';
@@ -97,22 +141,79 @@ export default function CreateReportScreen({ navigation }: any) {
             });
             if (!response.ok) throw new Error('이미지 업로드 실패');
             const data = await response.json();
-            return data.data;
+            return [...alreadyUploaded.map(url => ({ url, metadata: null })), ...data.data];
         } catch (error) {
             console.error('Upload images error:', error);
             throw error;
         }
     };
 
+    const { refreshRequests } = usePost();
     const [showDepositModal, setShowDepositModal] = useState(false);
     const [showApprovalWaitModal, setShowApprovalWaitModal] = useState(false);
+    const [showEditSuccessModal, setShowEditSuccessModal] = useState(false);
+
+    const handleConfirmUpdate = async () => {
+        try {
+            if (!editingRequest?.id) {
+                Alert.alert('오류', '정보를 찾을 수 없습니다.');
+                return;
+            }
+
+            setLoading(true);
+            let uploadedData: any[] = [];
+            if (selectedImages.length > 0) {
+                uploadedData = await uploadImages(selectedImages);
+            }
+
+            const imageUrls = uploadedData.map(d => d.url);
+            const metadataList = uploadedData.map(d => d.metadata).filter(m => m !== null);
+
+            await api.put(`/requests/${editingRequest.id}`, {
+                title,
+                description: `[습득물 신고]\n보관 방식: ${keepingMethod === 'DIRECT' ? '본인 보관' : '경찰서/데스크 인계'}\n습득 일시: ${foundDate}\n\n${description}`,
+                rewardAmount: 0,
+                depositAmount: 0,
+                location: locationName,
+                latitude: selectedLocation?.latitude,
+                longitude: selectedLocation?.longitude,
+                images: imageUrls,
+                metadata: metadataList,
+            });
+
+            await refreshRequests();
+            setShowEditSuccessModal(true);
+        } catch (error: any) {
+            const detail = error.response?.data?.message || error.message;
+            Alert.alert('오류', `수정 중 문제가 발생했습니다: ${detail}`);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleSubmit = async () => {
-        if (!title || !description || !locationName) {
-            Alert.alert('필수 입력 누락', '제목, 설명, 습득 장소를 모두 입력해주세요.');
-            return;
+        try {
+            if (!title.trim()) {
+                Alert.alert('알림', '제목을 입력해주세요.');
+                return;
+            }
+            if (!description.trim()) {
+                Alert.alert('알림', '설명을 입력해주세요.');
+                return;
+            }
+            if (!locationName) {
+                Alert.alert('알림', '위치를 선택해주세요.');
+                return;
+            }
+
+            if (editingRequest) {
+                await handleConfirmUpdate();
+            } else {
+                setShowDepositModal(true);
+            }
+        } catch (error: any) {
+            Alert.alert('오류', `처리 중 오류가 발생했습니다.`);
         }
-        setShowDepositModal(true);
     };
 
     const handleConfirmDeposit = async () => {
@@ -143,8 +244,13 @@ export default function CreateReportScreen({ navigation }: any) {
             setShowDepositModal(false);
             setShowApprovalWaitModal(true);
         } catch (error: any) {
-            console.error(error);
-            Alert.alert('오류', error.message || '등록에 실패했습니다.');
+            console.error('[DEBUG] Report Registration Error:', {
+                status: error.response?.status,
+                data: error.response?.data,
+                message: error.message
+            });
+            const errMsg = error.response?.data?.message || error.message || '등록에 실패했습니다.';
+            Alert.alert('등록 오류', errMsg);
         } finally {
             setLoading(false);
         }
@@ -206,7 +312,8 @@ export default function CreateReportScreen({ navigation }: any) {
                                     style={[styles.textInput, { flex: 1, marginRight: 8 }]}
                                     placeholder="지도에서 위치 선택"
                                     value={locationName}
-                                    editable={false}
+                                    onChangeText={setLocationName}
+                                    editable={true}
                                     placeholderTextColor="#9ca3af"
                                 />
                                 <TouchableOpacity
@@ -282,7 +389,9 @@ export default function CreateReportScreen({ navigation }: any) {
                             onPress={handleSubmit}
                             disabled={loading}
                         >
-                            <Text style={styles.submitButtonText}>{loading ? '제보 등록 중...' : '제보 등록 및 승인 요청'}</Text>
+                            <Text style={styles.submitButtonText}>
+                                {loading ? (editingRequest ? '수정 중...' : '제보 등록 중...') : (editingRequest ? '제보 수정하기' : '제보 등록 및 승인 요청')}
+                            </Text>
                         </TouchableOpacity>
 
                     </View>
@@ -342,11 +451,12 @@ export default function CreateReportScreen({ navigation }: any) {
                         <View style={styles.statusIconWrapper}>
                             <Ionicons name="checkmark-circle" size={60} color="#16a34a" />
                         </View>
-                        <Text style={styles.statusModalTitle}>제보 등록 접수</Text>
+                        <Text style={styles.statusModalTitle}>제보 접수 완료</Text>
                         <Text style={styles.statusModalDesc}>
-                            따뜻한 제보 감사합니다!{"\n"}
-                            제보 내용은 <Text style={styles.highlightText}>관리자 검토 후 즉시 노출</Text>됩니다.{"\n\n"}
-                            보통 1시간 이내에 처리가 완료됩니다.
+                            따뜻한 제보 감사합니다!{"\n\n"}
+                            제보 내용은 <Text style={styles.highlightText}>관리자 검토 후 즉시 리스트 최상단</Text>에{"\n"}
+                            노출되어 주인을 찾게 됩니다.{"\n\n"}
+                            <Text style={styles.subInfoText}>* 보통 1시간 이내 처리가 완료됩니다.</Text>
                         </Text>
                         <TouchableOpacity
                             style={styles.modalPrimaryButton}
@@ -355,7 +465,32 @@ export default function CreateReportScreen({ navigation }: any) {
                                 navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
                             }}
                         >
-                            <Text style={styles.modalPrimaryButtonText}>메인으로 이동</Text>
+                            <Text style={styles.modalPrimaryButtonText}>확인</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Edit Success Modal */}
+            <Modal visible={showEditSuccessModal} transparent animationType="fade">
+                <View style={styles.modalOverlay}>
+                    <View style={styles.statusModalContent}>
+                        <View style={styles.statusIconWrapper}>
+                            <Ionicons name="checkmark-circle" size={60} color="#16a34a" />
+                        </View>
+                        <Text style={styles.statusModalTitle}>제보 수정 완료</Text>
+                        <Text style={styles.statusModalDesc}>
+                            제보 게시글이 성공적으로 수정되었습니다!{"\n"}
+                            변경된 내용은 즉시 목록에 반영됩니다.
+                        </Text>
+                        <TouchableOpacity
+                            style={styles.modalPrimaryButton}
+                            onPress={() => {
+                                setShowEditSuccessModal(false);
+                                navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
+                            }}
+                        >
+                            <Text style={styles.modalPrimaryButtonText}>확인</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -665,6 +800,11 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         lineHeight: 24,
         marginBottom: 32,
+    },
+    subInfoText: {
+        fontSize: 12,
+        color: '#6b7280',
+        marginTop: 8,
     },
     highlightText: {
         color: '#16a34a',

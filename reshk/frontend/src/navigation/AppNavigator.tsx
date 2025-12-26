@@ -19,6 +19,7 @@ import ReviewScreen from '../screens/ReviewScreen';
 import ReportUserScreen from '../screens/ReportUserScreen';
 import UserDetailScreen from '../screens/UserDetailScreen';
 import BlockedUsersScreen from '../screens/BlockedUsersScreen';
+import CreateItemReportScreen from '../screens/CreateItemReportScreen';
 
 import { ActivityIndicator, View } from 'react-native';
 import { useAuth } from '../context/AuthContext';
@@ -41,9 +42,9 @@ export default function AppNavigator() {
 
                 {isLoggedIn ? (
                     // 2. Authenticated Only Screens
-                    <Stack.Group>
-                        <Stack.Screen name="CreateRequest" component={CreateRequestScreen} options={{ presentation: 'modal' }} />
-                        <Stack.Screen name="CreateReport" component={CreateReportScreen} options={{ presentation: 'modal' }} />
+                    <Stack.Group screenOptions={{ presentation: 'modal' }}>
+                        <Stack.Screen name="CreateRequest" component={CreateRequestScreen} />
+                        <Stack.Screen name="CreateReport" component={CreateReportScreen} />
                         <Stack.Screen name="Payment" component={PaymentScreen} />
                         <Stack.Screen name="Chat" component={ChatScreen} />
                         <Stack.Screen name="TransactionHistory" component={TransactionHistoryScreen} />
@@ -53,6 +54,7 @@ export default function AppNavigator() {
                         <Stack.Screen name="ReportUser" component={ReportUserScreen} />
                         <Stack.Screen name="UserDetail" component={UserDetailScreen} />
                         <Stack.Screen name="BlockedUsers" component={BlockedUsersScreen} />
+                        <Stack.Screen name="CreateItemReport" component={CreateItemReportScreen} />
                     </Stack.Group>
                 ) : (
                     // 3. Unauthenticated Only Screens

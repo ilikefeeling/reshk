@@ -12,7 +12,8 @@ import {
     RefreshControl,
     Image,
     StyleSheet,
-    Dimensions
+    Dimensions,
+    Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../utils/api';
@@ -79,6 +80,11 @@ const AdminDashboardScreen = ({ navigation }: any) => {
         }
     }, [isFocused]);
 
+    useEffect(() => {
+        setSelectedIds(new Set());
+        setSelectionMode(false);
+    }, [activeTab]);
+
     const onRefresh = () => {
         setRefreshing(true);
         fetchData();
@@ -95,37 +101,107 @@ const AdminDashboardScreen = ({ navigation }: any) => {
         if (newSelected.size === 0) setSelectionMode(false);
     };
 
+    const handleApproveRequest = async (id: number) => {
+        try {
+            setLoading(true);
+            await api.post(`/requests/admin/${id}/approve`);
+            Alert.alert('성공', '의뢰가 승인되었습니다. 이제 사용자들에게 노출됩니다.');
+            fetchData();
+        } catch (error: any) {
+            console.error(error);
+            Alert.alert('오류', error.response?.data?.message || '승인 처리 중 문제가 발생했습니다.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleBulkDelete = async () => {
+        console.log('Bulk delete triggered. Selected IDs:', Array.from(selectedIds));
         if (selectedIds.size === 0) return;
 
-        Alert.alert(
-            '항목 삭제',
-            `선택한 ${selectedIds.size}개의 항목을 삭제하시겠습니까?`,
-            [
-                { text: '취소', style: 'cancel' },
-                {
-                    text: '삭제',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            setLoading(true);
-                            await api.delete('/admin-suite/requests/bulk', {
-                                data: { ids: Array.from(selectedIds) }
-                            });
-                            Alert.alert('성공', '선택한 항목들이 삭제되었습니다.');
-                            setSelectedIds(new Set());
-                            setSelectionMode(false);
-                            fetchData();
-                        } catch (error) {
-                            console.error(error);
-                            Alert.alert('오류', '삭제 중 문제가 발생했습니다.');
-                        } finally {
-                            setLoading(false);
-                        }
-                    }
-                }
-            ]
-        );
+        const isReports = activeTab === 'Reports';
+        const targetName = isReports ? '제보' : '의뢰';
+        const endpoint = isReports ? '/admin-suite/reports/bulk' : '/admin-suite/requests/bulk';
+
+        const performDelete = async () => {
+            try {
+                setLoading(true);
+                console.log(`[BULK_DELETE] Calling DELETE ${endpoint} with IDs:`, Array.from(selectedIds));
+                const response = await api.delete(endpoint, {
+                    data: { ids: Array.from(selectedIds) }
+                });
+                console.log(`[BULK_DELETE] Success:`, response.data);
+
+                Alert.alert('성공', `선택한 ${targetName}들이 성공적으로 삭제되었습니다.`);
+                setSelectedIds(new Set());
+                setSelectionMode(false);
+
+                // Refresh data to reflect changes
+                fetchData();
+            } catch (error: any) {
+                console.error('[BULK_DELETE] Error:', error);
+                const errorMessage = error.response?.data?.details || error.response?.data?.message || error.message || '삭제 중 문제가 발생했습니다.';
+                Alert.alert('삭제 오류', errorMessage);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (Platform.OS === 'web') {
+            if (window.confirm(`선택한 ${selectedIds.size}개의 ${targetName}를 삭제하시겠습니까?`)) {
+                performDelete();
+            }
+        } else {
+            Alert.alert(
+                `${targetName} 삭제`,
+                `선택한 ${selectedIds.size}개의 ${targetName}를 삭제하시겠습니까?`,
+                [
+                    { text: '취소', style: 'cancel' },
+                    { text: '삭제', style: 'destructive', onPress: performDelete }
+                ]
+            );
+        }
+    };
+
+    const handleBulkApprove = async () => {
+        if (selectedIds.size === 0) return;
+
+        const isReports = activeTab === 'Reports';
+        const targetName = isReports ? '제보' : '의뢰';
+        const endpoint = isReports ? '/admin-suite/reports/bulk-approve' : '/admin-suite/requests/bulk-approve';
+
+        const performApprove = async () => {
+            try {
+                setLoading(true);
+                await api.post(endpoint, {
+                    ids: Array.from(selectedIds)
+                });
+                Alert.alert('성공', `선택한 ${selectedIds.size}개의 ${targetName}가 승인되었습니다.`);
+                setSelectedIds(new Set());
+                setSelectionMode(false);
+                fetchData();
+            } catch (error: any) {
+                console.error('Bulk approve error:', error);
+                Alert.alert('오류', error.response?.data?.message || '승인 처리 중 문제가 발생했습니다.');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (Platform.OS === 'web') {
+            if (window.confirm(`선택한 ${selectedIds.size}개의 ${targetName}를 승인하시겠습니까?`)) {
+                performApprove();
+            }
+        } else {
+            Alert.alert(
+                `${targetName} 승인`,
+                `선택한 ${selectedIds.size}개의 ${targetName}를 승인하시겠습니까?`,
+                [
+                    { text: '취소', style: 'cancel' },
+                    { text: '승인', onPress: performApprove }
+                ]
+            );
+        }
     };
 
     const TabButton = ({ tab, icon, label }: { tab: AdminTab; icon: string; label: string }) => (
@@ -154,12 +230,28 @@ const AdminDashboardScreen = ({ navigation }: any) => {
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
             <View style={styles.statRow}>
-                <StatCard title="오늘 신규" value={stats?.today || 0} icon="add-circle" color="#6366f1" />
-                <StatCard title="승인 대기" value={stats?.pending || 0} icon="time" color="#f59e0b" />
+                <TouchableOpacity style={{ flex: 1 }} onPress={() => setActiveTab('Registrations')}>
+                    <StatCard title="오늘 신규" value={stats?.today || 0} icon="add-circle" color="#6366f1" />
+                </TouchableOpacity>
+                <TouchableOpacity style={{ flex: 1 }} onPress={() => setActiveTab('Registrations')}>
+                    <StatCard title="승인 대기" value={stats?.pending || 0} icon="time" color="#f59e0b" />
+                </TouchableOpacity>
             </View>
             <View style={styles.statRow}>
-                <StatCard title="총 거래량" value={`${((stats?.revenue || 0) / 10000).toFixed(1)}만`} icon="wallet" color="#10b981" />
-                <StatCard title="CS 티켓" value={tickets.filter(t => t.status === 'OPEN').length} icon="chatbubbles" color="#f43f5e" />
+                <TouchableOpacity style={{ flex: 1 }} onPress={() => setActiveTab('Registrations')}>
+                    <StatCard title="의뢰 승인대기" value={stats?.pending - (stats?.pendingReports || 0) || 0} icon="time" color="#f59e0b" />
+                </TouchableOpacity>
+                <TouchableOpacity style={{ flex: 1 }} onPress={() => setActiveTab('Reports')}>
+                    <StatCard title="제보 승인대기" value={stats?.pendingReports || 0} icon="megaphone" color="#ec4899" />
+                </TouchableOpacity>
+            </View>
+            <View style={styles.statRow}>
+                <TouchableOpacity style={{ flex: 1 }} onPress={() => setActiveTab('Payments')}>
+                    <StatCard title="총 거래량" value={`${((stats?.revenue || 0) / 10000).toFixed(1)}만`} icon="wallet" color="#10b981" />
+                </TouchableOpacity>
+                <TouchableOpacity style={{ flex: 1 }} onPress={() => setActiveTab('CS_Support')}>
+                    <StatCard title="CS 티켓" value={tickets.filter(t => t.status === 'OPEN').length} icon="chatbubbles" color="#f43f5e" />
+                </TouchableOpacity>
             </View>
 
             <Text style={styles.sectionTitle}>긴급 조치 사항</Text>
@@ -175,6 +267,19 @@ const AdminDashboardScreen = ({ navigation }: any) => {
                     </TouchableOpacity>
                 </View>
             ))}
+
+            {stats?.pendingReports > 0 && (
+                <View style={[styles.identityAlert, { backgroundColor: '#fffbeb', borderColor: '#fef3c7' }]}>
+                    <Ionicons name="megaphone" size={24} color="#f59e0b" />
+                    <View style={styles.identityInfo}>
+                        <Text style={[styles.identityAlertTitle, { color: '#92400e' }]}>신규 제보 {stats.pendingReports}건 도착</Text>
+                        <Text style={[styles.identityAlertSubtitle, { color: '#b45309' }]}>실시간 매칭을 위해 빠른 검토가 필요합니다.</Text>
+                    </View>
+                    <TouchableOpacity onPress={() => setActiveTab('Reports')} style={[styles.identityBadge, { backgroundColor: '#f59e0b' }]}>
+                        <Text style={styles.identityBadgeText}>검토하기</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
 
             {identityQueue.length > 0 && (
                 <View style={styles.identityAlert}>
@@ -192,62 +297,88 @@ const AdminDashboardScreen = ({ navigation }: any) => {
     );
 
     const renderRegistrations = () => (
-        <FlatList
-            data={requests}
-            keyExtractor={(item) => item.id.toString()}
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            contentContainerStyle={styles.listContent}
-            renderItem={({ item }) => (
+        <View style={{ flex: 1 }}>
+            <View style={styles.tabHeader}>
+                <Text style={styles.tabHeaderTitle}>의뢰 관리 목록</Text>
                 <TouchableOpacity
-                    onLongPress={() => {
-                        setSelectionMode(true);
-                        toggleSelection(item.id);
-                    }}
-                    onPress={() => {
-                        if (selectionMode) {
-                            toggleSelection(item.id);
-                        }
-                    }}
-                    style={[
-                        styles.registrationCard,
-                        selectedIds.has(item.id) && styles.registrationCardSelected
-                    ]}
+                    onPress={() => navigation.navigate('CreateRequest')}
+                    style={styles.headerActionButton}
                 >
-                    <View style={styles.cardHeaderRow}>
-                        <View style={styles.cardHeaderLeft}>
-                            {selectionMode && (
-                                <View style={[
-                                    styles.checkbox,
-                                    selectedIds.has(item.id) && styles.checkboxActive
-                                ]}>
-                                    {selectedIds.has(item.id) && <Ionicons name="checkmark" size={12} color="white" />}
-                                </View>
-                            )}
-                            <Text style={styles.categoryLabel}>{item.category}</Text>
-                        </View>
-                        <View style={[
-                            styles.statusLabelWrapper,
-                            item.status === 'OPEN' ? styles.statusOpen : styles.statusClosed
-                        ]}>
-                            <Text style={[
-                                styles.statusLabelText,
-                                item.status === 'OPEN' ? styles.statusOpenText : styles.statusClosedText
-                            ]}>{item.status}</Text>
-                        </View>
-                    </View>
-                    <Text style={styles.itemTitle}>{item.title}</Text>
-                    <Text style={styles.itemDescription} numberOfLines={1}>{item.description}</Text>
-                    <View style={styles.cardFooter}>
-                        <View style={styles.userRow}>
-                            <Ionicons name="person-outline" size={12} color="#9ca3af" />
-                            <Text style={styles.userNameText}>{item.user?.name}</Text>
-                        </View>
-                        <Text style={styles.dateText}>{new Date(item.createdAt).toLocaleDateString()}</Text>
-                    </View>
+                    <Ionicons name="add-circle" size={24} color="#4f46e5" />
+                    <Text style={styles.headerActionText}>신규 등록</Text>
                 </TouchableOpacity>
-            )}
-        />
+            </View>
+            <FlatList
+                data={requests}
+                keyExtractor={(item) => item.id.toString()}
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                contentContainerStyle={styles.listContent}
+                renderItem={({ item }) => {
+                    return (
+                        <TouchableOpacity
+                            onLongPress={() => {
+                                setSelectionMode(true);
+                                toggleSelection(item.id);
+                            }}
+                            onPress={() => {
+                                if (selectionMode) {
+                                    toggleSelection(item.id);
+                                }
+                            }}
+                            style={[
+                                styles.registrationCard,
+                                selectedIds.has(item.id) && styles.registrationCardSelected
+                            ]}
+                        >
+                            <View style={styles.cardHeaderRow}>
+                                <View style={styles.cardHeaderLeft}>
+                                    {selectionMode && (
+                                        <View style={[
+                                            styles.checkbox,
+                                            selectedIds.has(item.id) && styles.checkboxActive
+                                        ]}>
+                                            {selectedIds.has(item.id) && <Ionicons name="checkmark" size={12} color="white" />}
+                                        </View>
+                                    )}
+                                    <Text style={styles.categoryLabel}>{item.category}</Text>
+                                </View>
+                                <View style={[
+                                    styles.statusLabelWrapper,
+                                    item.status === 'OPEN' ? styles.statusOpen : styles.statusClosed
+                                ]}>
+                                    <Text style={[
+                                        styles.statusLabelText,
+                                        item.status === 'OPEN' ? styles.statusOpenText : styles.statusClosedText
+                                    ]}>{item.status}</Text>
+                                </View>
+                            </View>
+                            <Text style={styles.itemTitle}>{item.title}</Text>
+                            <Text style={styles.itemDescription} numberOfLines={1}>{item.description}</Text>
+                            <View style={styles.cardFooter}>
+                                <View style={styles.userRow}>
+                                    <Ionicons name="person-outline" size={12} color="#9ca3af" />
+                                    <Text style={styles.userNameText}>{item.user?.name}</Text>
+                                </View>
+                                <Text style={styles.dateText}>{new Date(item.createdAt).toLocaleDateString()}</Text>
+                            </View>
+
+                            {(item.status === 'PENDING_DEPOSIT' || item.status === 'PENDING') && (
+                                <TouchableOpacity
+                                    onPress={() => handleApproveRequest(item.id)}
+                                    style={styles.approveInlineButton}
+                                >
+                                    <Ionicons name="checkmark-circle-outline" size={16} color="white" />
+                                    <Text style={styles.approveInlineButtonText}>
+                                        {item.status === 'PENDING_DEPOSIT' ? '입금 확인 및 승인' : '제보 검토 및 승인'}
+                                    </Text>
+                                </TouchableOpacity>
+                            )}
+                        </TouchableOpacity>
+                    );
+                }}
+            />
+        </View>
     );
 
     const renderPayments = () => (
@@ -383,75 +514,122 @@ const AdminDashboardScreen = ({ navigation }: any) => {
     };
 
     const renderReports = () => (
-        <FlatList
-            data={pendingReports}
-            keyExtractor={(item) => item.id.toString()}
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            contentContainerStyle={styles.listContent}
-            renderItem={({ item }) => (
-                <View style={styles.reportCard}>
-                    <View style={styles.reportTopRow}>
-                        <View style={styles.reportMainInfo}>
-                            <Text style={styles.reportRequestTitle}>의뢰: {item.request?.title}</Text>
-                            <Text style={styles.reportDescription}>{item.description}</Text>
-                            <View style={styles.scoreRow}>
-                                <View style={[
-                                    styles.scoreBadge,
-                                    item.verificationScore > 0.7 ? styles.scoreHigh : styles.scoreMid
-                                ]}>
-                                    <Text style={[
-                                        styles.scoreText,
-                                        item.verificationScore > 0.7 ? styles.scoreTextHigh : styles.scoreTextMid
+        <View style={{ flex: 1 }}>
+            <View style={styles.tabHeader}>
+                <Text style={styles.tabHeaderTitle}>제보 관리 목록</Text>
+                <TouchableOpacity
+                    onPress={() => navigation.navigate('CreateReport')}
+                    style={styles.headerActionButton}
+                >
+                    <Ionicons name="add-circle" size={24} color="#ec4899" />
+                    <Text style={styles.headerActionText}>제보 하기</Text>
+                </TouchableOpacity>
+            </View>
+            <FlatList
+                data={pendingReports}
+                keyExtractor={(item) => item.id.toString()}
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                contentContainerStyle={styles.listContent}
+                renderItem={({ item }) => (
+                    <TouchableOpacity
+                        onLongPress={() => {
+                            setSelectionMode(true);
+                            toggleSelection(item.id);
+                        }}
+                        onPress={() => {
+                            if (selectionMode) {
+                                toggleSelection(item.id);
+                            }
+                        }}
+                        style={[
+                            styles.reportCard,
+                            selectedIds.has(item.id) && styles.registrationCardSelected
+                        ]}
+                    >
+                        <View style={styles.reportTopRow}>
+                            <View style={styles.reportMainInfo}>
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        {selectionMode && (
+                                            <View style={[
+                                                styles.checkbox,
+                                                selectedIds.has(item.id) && styles.checkboxActive
+                                            ]}>
+                                                {selectedIds.has(item.id) && <Ionicons name="checkmark" size={12} color="white" />}
+                                            </View>
+                                        )}
+                                        <Text style={styles.reportRequestTitle}>의뢰: {item.request?.title}</Text>
+                                    </View>
+                                    <View style={[
+                                        styles.statusLabelWrapper,
+                                        item.status === 'ACCEPTED' ? styles.statusOpen : styles.statusClosed
                                     ]}>
-                                        종합 신뢰도: {(item.verificationScore * 100).toFixed(0)}%
-                                    </Text>
+                                        <Text style={[
+                                            styles.statusLabelText,
+                                            item.status === 'ACCEPTED' ? styles.statusOpenText : styles.statusClosedText
+                                        ]}>{item.status}</Text>
+                                    </View>
                                 </View>
-                                {item.aiScore !== undefined && item.aiScore !== null && (
-                                    <View style={styles.aiBadge}>
-                                        <Text style={styles.aiBadgeText}>
-                                            AI 유사도: {(item.aiScore * 100).toFixed(0)}%
+                                <Text style={styles.reportDescription}>{item.description}</Text>
+                                <View style={styles.scoreRow}>
+                                    <View style={[
+                                        styles.scoreBadge,
+                                        item.verificationScore > 0.7 ? styles.scoreHigh : styles.scoreMid
+                                    ]}>
+                                        <Text style={[
+                                            styles.scoreText,
+                                            item.verificationScore > 0.7 ? styles.scoreTextHigh : styles.scoreTextMid
+                                        ]}>
+                                            종합 신뢰도: {(item.verificationScore * 100).toFixed(0)}%
                                         </Text>
                                     </View>
-                                )}
-                                <Text style={styles.reportDate}>{new Date(item.createdAt).toLocaleDateString()}</Text>
+                                    {item.aiScore !== undefined && item.aiScore !== null && (
+                                        <View style={styles.aiBadge}>
+                                            <Text style={styles.aiBadgeText}>
+                                                AI 유사도: {(item.aiScore * 100).toFixed(0)}%
+                                            </Text>
+                                        </View>
+                                    )}
+                                    <Text style={styles.reportDate}>{new Date(item.createdAt).toLocaleDateString()}</Text>
+                                </View>
                             </View>
+                            {item.images?.[0] && (
+                                <Image source={{ uri: item.images[0] }} style={styles.reportThumbnail} />
+                            )}
                         </View>
-                        {item.images?.[0] && (
-                            <Image source={{ uri: item.images[0] }} style={styles.reportThumbnail} />
-                        )}
-                    </View>
 
-                    <View style={styles.exifBox}>
-                        <Text style={styles.exifText}>📍 위치: {item.latitude && item.longitude ? `${item.latitude.toFixed(4)}, ${item.longitude.toFixed(4)}` : '정보 없음'}</Text>
-                        <Text style={styles.exifText}>⏰ 촬영: {item.capturedAt ? new Date(item.capturedAt).toLocaleString() : '정보 없음'}</Text>
-                    </View>
+                        <View style={styles.exifBox}>
+                            <Text style={styles.exifText}>📍 위치: {item.latitude && item.longitude ? `${item.latitude.toFixed(4)}, ${item.longitude.toFixed(4)}` : '정보 없음'}</Text>
+                            <Text style={styles.exifText}>⏰ 촬영: {item.capturedAt ? new Date(item.capturedAt).toLocaleString() : '정보 없음'}</Text>
+                        </View>
 
-                    <View style={styles.actionRow}>
-                        <TouchableOpacity
-                            onPress={() => handleApproveReport(item.id)}
-                            style={styles.approveReportButton}
-                        >
-                            <Ionicons name="checkmark-circle" size={16} color="white" />
-                            <Text style={styles.approveReportButtonText}>제보 승인</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            onPress={() => handleRejectReport(item.id)}
-                            style={styles.rejectReportButton}
-                        >
-                            <Ionicons name="close-circle" size={16} color="#4b5563" />
-                            <Text style={styles.rejectReportButtonText}>허위 제보 거절</Text>
-                        </TouchableOpacity>
+                        <View style={styles.actionRow}>
+                            <TouchableOpacity
+                                onPress={() => handleApproveReport(item.id)}
+                                style={styles.approveReportButton}
+                            >
+                                <Ionicons name="checkmark-circle" size={16} color="white" />
+                                <Text style={styles.approveReportButtonText}>제보 승인</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => handleRejectReport(item.id)}
+                                style={styles.rejectReportButton}
+                            >
+                                <Ionicons name="close-circle" size={16} color="#4b5563" />
+                                <Text style={styles.rejectReportButtonText}>허위 제보 거절</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </TouchableOpacity>
+                )}
+                ListEmptyComponent={() => (
+                    <View style={styles.emptyContainer}>
+                        <Ionicons name="checkmark-done-circle-outline" size={64} color="#d1d5db" />
+                        <Text style={styles.emptyText}>검토 대기 중인 제보가 없습니다.</Text>
                     </View>
-                </View>
-            )}
-            ListEmptyComponent={() => (
-                <View style={styles.emptyContainer}>
-                    <Ionicons name="checkmark-done-circle-outline" size={64} color="#d1d5db" />
-                    <Text style={styles.emptyText}>검토 대기 중인 제보가 없습니다.</Text>
-                </View>
-            )}
-        />
+                )}
+            />
+        </View >
     );
 
     if (loading && !refreshing) {
@@ -496,14 +674,21 @@ const AdminDashboardScreen = ({ navigation }: any) => {
             </View>
 
             {/* Bulk Action Button */}
-            {selectionMode && activeTab === 'Registrations' && selectedIds.size > 0 && (
+            {selectionMode && (activeTab === 'Registrations' || activeTab === 'Reports') && selectedIds.size > 0 && (
                 <View style={styles.bulkActionWrapper}>
                     <TouchableOpacity
+                        onPress={handleBulkApprove}
+                        style={[styles.bulkButton, styles.bulkApproveButton]}
+                    >
+                        <Ionicons name="checkmark-done" size={20} color="white" />
+                        <Text style={styles.bulkButtonText}>{selectedIds.size}개 일괄 승인</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
                         onPress={handleBulkDelete}
-                        style={styles.bulkDeleteButton}
+                        style={[styles.bulkButton, styles.bulkDeleteButton]}
                     >
                         <Ionicons name="trash-outline" size={20} color="white" />
-                        <Text style={styles.bulkDeleteText}>{selectedIds.size}개 일괄 삭제</Text>
+                        <Text style={styles.bulkButtonText}>일괄 삭제</Text>
                     </TouchableOpacity>
                 </View>
             )}
@@ -512,6 +697,37 @@ const AdminDashboardScreen = ({ navigation }: any) => {
 };
 
 const styles = StyleSheet.create({
+    tabHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingBottom: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f1f5f9',
+        marginBottom: 8,
+    },
+    tabHeaderTitle: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#1e293b',
+    },
+    headerActionButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#f8fafc',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+    },
+    headerActionText: {
+        marginLeft: 4,
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: '#475569',
+    },
     safeArea: {
         flex: 1,
         backgroundColor: '#f9fafb',
@@ -843,9 +1059,6 @@ const styles = StyleSheet.create({
         fontSize: 14,
         marginBottom: 16,
     },
-    actionRow: {
-        flexDirection: 'row',
-    },
     approveButton: {
         backgroundColor: '#4f46e5',
         paddingHorizontal: 16,
@@ -953,6 +1166,13 @@ const styles = StyleSheet.create({
     reportMainInfo: {
         flex: 1,
         marginRight: 16,
+    },
+    actionRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingTop: 12,
+        borderTopWidth: 1,
+        borderTopColor: '#f1f5f9',
     },
     reportRequestTitle: {
         color: '#94a3b8',
@@ -1069,25 +1289,51 @@ const styles = StyleSheet.create({
         bottom: 24,
         left: 24,
         right: 24,
+        zIndex: 1000,
+        elevation: 10,
+        flexDirection: 'row',
+        gap: 12,
     },
-    bulkDeleteButton: {
-        backgroundColor: '#f43f5e',
+    bulkButton: {
+        flex: 1,
         paddingVertical: 16,
         borderRadius: 16,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        shadowColor: '#f43f5e',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.2,
         shadowRadius: 8,
         elevation: 4,
     },
-    bulkDeleteText: {
+    bulkApproveButton: {
+        backgroundColor: '#4f46e5',
+        shadowColor: '#4f46e5',
+    },
+    bulkDeleteButton: {
+        backgroundColor: '#f43f5e',
+        shadowColor: '#f43f5e',
+    },
+    bulkButtonText: {
         color: '#ffffff',
         fontWeight: 'bold',
-        fontSize: 18,
+        fontSize: 16,
         marginLeft: 8,
+    },
+    approveInlineButton: {
+        backgroundColor: '#4f46e5',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 10,
+        borderRadius: 12,
+        marginTop: 12,
+    },
+    approveInlineButtonText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 13,
+        marginLeft: 6,
     },
 });
 

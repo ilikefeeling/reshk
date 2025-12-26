@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Header from '../components/Header';
 import { Ionicons } from '@expo/vector-icons';
 import { usePost } from '../context/PostContext';
@@ -16,48 +16,34 @@ const iconMap = {
 };
 
 export default function HomePage() {
-    const { requests, setRequests } = usePost();
+    const { requests, setRequests, refreshRequests } = usePost();
     const navigation = useNavigation();
     const { isLoggedIn } = useAuth();
     const [loading, setLoading] = React.useState(true);
+    const [refreshing, setRefreshing] = React.useState(false);
 
-    const fetchRequests = async () => {
-        try {
-            setLoading(true);
-            const response = await api.get('/requests');
-            const mappedData = response.data.map(req => ({
-                ...req,
-                reward: `₩${Number(req.rewardAmount).toLocaleString()}`,
-                date: new Date(req.createdAt).toLocaleDateString(),
-                keyword: req.category === 'LOST' || req.category === 'FOUND' ? (req.title.includes('아이폰') ? '아이폰' : (req.title.includes('강아지') || req.title.includes('개') ? '말티즈' : '가구')) : '가구'
-            }));
-            if (setRequests) setRequests(mappedData);
-        } catch (error) {
-            console.error('[DEBUG] HomePage: Fetch Error:', error.message);
-        } finally {
-            setLoading(false);
-        }
-    };
+    const onRefresh = React.useCallback(async () => {
+        setRefreshing(true);
+        await refreshRequests();
+        setRefreshing(false);
+    }, [refreshRequests]);
 
-    React.useEffect(() => {
-        fetchRequests();
-    }, []);
-
-    const { useFocusEffect } = require('@react-navigation/native');
     useFocusEffect(
         React.useCallback(() => {
-            fetchRequests();
-        }, [])
+            const init = async () => {
+                if (requests.length === 0) setLoading(true);
+                await refreshRequests();
+                setLoading(false);
+            };
+            init();
+        }, [refreshRequests])
     );
 
     const handleProtectedAction = async (screen) => {
-        // If already recognized as logged in, proceed
         if (isLoggedIn) {
             navigation.navigate(screen);
             return;
         }
-
-        // Check AsyncStorage directly to handle race condition where isLoggedIn state hasn't updated yet
         const token = await AsyncStorage.getItem('token');
         if (token && token !== 'null' && token !== 'undefined') {
             navigation.navigate(screen);
@@ -70,12 +56,19 @@ export default function HomePage() {
     return (
         <SafeAreaView style={styles.safeArea}>
             <Header />
-            {loading ? (
+            {loading && !refreshing ? (
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                     <ActivityIndicator size="large" color="#3b82f6" />
                 </View>
             ) : (
-                <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+                <ScrollView
+                    style={styles.scrollView}
+                    contentContainerStyle={styles.scrollContent}
+                    refreshControl={
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#3b82f6" />
+                    }
+                >
+                    {/* Banner ... */}
                     {/* Banner */}
                     <View style={styles.banner}>
                         <TouchableOpacity
