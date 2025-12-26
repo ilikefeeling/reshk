@@ -13,26 +13,21 @@
       }
     }
   ],
-  "rewrites": [
+  "routes": [
     {
-      "source": "/favicon.ico",
-      "destination": "/favicon.ico"
+      "src": "/api/(.*)",
+      "dest": "/backend/src/index.ts"
     },
     {
-      "source": "/api/(.*)",
-      "destination": "backend/src/index.ts"
+      "src": "/uploads/(.*)",
+      "dest": "/backend/src/index.ts"
     },
     {
-      "source": "/uploads/(.*)",
-      "destination": "backend/src/index.ts"
+      "handle": "filesystem"
     },
     {
-      "source": "/((?!api|uploads).*)",
-      "destination": "/$1"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }
