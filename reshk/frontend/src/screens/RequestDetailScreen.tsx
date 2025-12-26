@@ -396,7 +396,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     imageCarousel: {
-        height: 288, // 72 * 4
+        height: 288,
         backgroundColor: '#000000',
     },
     carouselImage: {
