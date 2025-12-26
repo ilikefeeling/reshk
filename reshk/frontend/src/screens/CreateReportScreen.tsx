@@ -270,8 +270,8 @@ export default function CreateReportScreen({ route, navigation }: any) {
 
                 {/* Hero */}
                 <View style={styles.hero}>
-                    <Text style={styles.heroTitle}>"당신의 따뜻한 제보가{"\n"}누군가에게는 큰 기적이 됩니다."</Text>
-                    <Text style={styles.heroSubtitle}>관리자 승인 후 즉시 리스트에 노출되어 주인을 찾게 됩니다.</Text>
+                    <Text style={styles.heroTitle}>"당신의 사소한 발견이{"\n"}누군가에게는 기적이 됩니다."</Text>
+                    <Text style={styles.heroSubtitle}>당신의 선의가 헛되지 않도록, 보상의 마지막 순간까지 lookingall이 책임집니다.</Text>
                 </View>
 
                 <View style={styles.formContainer}>
@@ -399,12 +399,18 @@ export default function CreateReportScreen({ route, navigation }: any) {
                     {/* Footer Info */}
                     <View style={styles.footerInfo}>
                         <View style={styles.footerRow}>
-                            <Ionicons name="notifications-outline" size={20} color="#4b5563" style={styles.footerIcon} />
-                            <Text style={styles.footerText}>제보가 승인되면 의뢰인에게 실시간으로 알림이 전송됩니다.</Text>
+                            <Ionicons name="gift-outline" size={20} color="#16a34a" style={styles.footerIcon} />
+                            <Text style={[styles.footerText, { color: '#166534', fontWeight: 'bold' }]}>
+                                찾아주신 보람은 마음속에, 합당한 보상은 확실하게.
+                            </Text>
                         </View>
                         <View style={styles.footerRow}>
-                            <Ionicons name="chatbubbles-outline" size={20} color="#4b5563" style={styles.footerIcon} />
-                            <Text style={styles.footerText}>LookingAll 안심 채팅으로 안전하게 대화하세요.</Text>
+                            <Ionicons name="card-outline" size={20} color="#4b5563" style={styles.footerIcon} />
+                            <Text style={styles.footerText}>복잡한 약속이나 조율 없이, 승인 즉시 당신의 계좌로 약속된 보상이 전달됩니다.</Text>
+                        </View>
+                        <View style={styles.footerRow}>
+                            <Ionicons name="shield-checkmark-outline" size={20} color="#4b5563" style={styles.footerIcon} />
+                            <Text style={styles.footerText}>투명한 보상 프로세스. lookingall이 제보자와 주인 사이의 가장 안전한 신뢰교량이 되겠습니다.</Text>
                         </View>
                     </View>
                 </View>

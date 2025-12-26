@@ -78,8 +78,11 @@ export default function HomePage() {
                             <Ionicons name="information-circle-outline" size={20} color="#1e40af" />
                         </TouchableOpacity>
 
-                        <Text style={styles.bannerTitle}>
-                            우리 서비스에 오신 것을 환영합니다
+                        <Text style={styles.bannerHeadline}>
+                            당신의 소중함은 반드시{"\n"}돌아옵니다
+                        </Text>
+                        <Text style={styles.bannerSubCopy}>
+                            사각지대 없는 시선으로 lookingall이{"\n"}끝까지 함께하겠습니다
                         </Text>
 
                         <View style={styles.bannerButtons}>
@@ -194,13 +197,22 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.4)',
         borderRadius: 20,
     },
-    bannerTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
+    bannerHeadline: {
+        fontSize: 22,
+        fontWeight: '900',
         marginBottom: 8,
         textAlign: 'center',
-        color: '#1f2937',
-        marginTop: 8,
+        color: '#1e3a8a',
+        marginTop: 12,
+        lineHeight: 28,
+    },
+    bannerSubCopy: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: '#3b82f6',
+        textAlign: 'center',
+        marginBottom: 16,
+        lineHeight: 20,
     },
     bannerButtons: {
         flexDirection: 'row',

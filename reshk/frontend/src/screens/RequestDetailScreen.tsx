@@ -176,6 +176,13 @@ export default function RequestDetailScreen({ route, navigation }: any) {
                         {item.description}
                     </Text>
 
+                    <View style={styles.trustBanner}>
+                        <Ionicons name="shield-checkmark" size={20} color="#1e40af" />
+                        <Text style={styles.trustBannerText}>
+                            투명한 보상 프로세스. lookingall이 제보자와 주인 사이의 가장 안전한 신뢰교량이 되겠습니다.
+                        </Text>
+                    </View>
+
                     {item.userId === currentUserId && reports.filter((r: any) => r.status === 'ACCEPTED').length > 0 && (
                         <View style={styles.reportsSection}>
                             <Text style={styles.sectionTitle}>도착한 제보 ({reports.filter((r: any) => r.status === 'ACCEPTED').length})</Text>
@@ -651,5 +658,22 @@ const styles = StyleSheet.create({
         color: '#ffffff',
         fontSize: 13,
         fontWeight: 'bold',
-    },
-});
+        trustBanner: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: '#eff6ff',
+            padding: 12,
+            borderRadius: 12,
+            marginTop: 16,
+            borderWidth: 1,
+            borderColor: '#bfdbfe',
+        },
+        trustBannerText: {
+            flex: 1,
+            marginLeft: 8,
+            fontSize: 13,
+            color: '#1e40af',
+            fontWeight: '500',
+            lineHeight: 18,
+        },
+    });
