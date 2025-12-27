@@ -18,7 +18,7 @@ const getBaseUrl = () => {
 
         // If not localhost (e.g., browsing via IP), use the same IP but point to backend port 3002
         // Unless it's a Vercel/Production deployment where /api is routed by proxy
-        if (hostname.includes('vercel.app') || hostname.includes('github.io')) {
+        if (hostname.includes('vercel.app') || hostname.includes('github.io') || hostname.includes('lookingall.com')) {
             return `${protocol}//${hostname}${port}/api`;
         }
 
