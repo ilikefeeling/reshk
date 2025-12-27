@@ -228,10 +228,16 @@ export const kakaoCallback = async (req: Request, res: Response) => {
 
         res.redirect(finalRedirectUrl);
     } catch (error: any) {
-        console.error('Kakao Callback Error:', error.response?.data || error.message);
+        const errorMsg = error.response?.data?.error_description || error.message;
+        console.error('[DEBUG] Kakao Callback Error:', JSON.stringify(error.response?.data || error.message, null, 2));
+
         const { state } = req.query;
         const frontendOrigin = state ? decodeURIComponent(state as string) : '/';
-        res.redirect(`${frontendOrigin.replace(/\/+$/, '')}/login?error=callback_failed`);
+
+        // Pass the error message for debugging in production
+        const finalRedirectUrl = `${frontendOrigin.replace(/\/+$/, '')}/login?error=callback_failed&reason=${encodeURIComponent(errorMsg)}`;
+        console.log(`[DEBUG] Redirecting to error page: ${finalRedirectUrl}`);
+        res.redirect(finalRedirectUrl);
     }
 };
 
