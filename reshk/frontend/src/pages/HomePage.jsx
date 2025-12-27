@@ -82,7 +82,7 @@ export default function HomePage() {
                             당신의 소중함은 반드시{"\n"}돌아옵니다
                         </Text>
                         <Text style={styles.bannerSubCopy}>
-                            사각지대 없는 시선으로 lookingall이{"\n"}끝까지 함께하겠습니다
+                            사각지대 없는 시선으로 LookingAll이{"\n"}끝까지 함께하겠습니다
                         </Text>
 
                         <View style={styles.bannerButtons}>
