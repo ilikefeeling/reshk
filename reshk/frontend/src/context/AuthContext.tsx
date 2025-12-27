@@ -35,6 +35,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             // Priority 1: Check if we just redirected from social login (Web only)
             if (Platform.OS === 'web') {
                 const params = new URLSearchParams(window.location.search);
+                const queryToken = params.get('token');
+                const queryUser = params.get('user');
                 const queryError = params.get('error');
                 const queryReason = params.get('reason');
 
