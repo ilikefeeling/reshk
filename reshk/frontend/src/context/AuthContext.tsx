@@ -35,8 +35,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             // Priority 1: Check if we just redirected from social login (Web only)
             if (Platform.OS === 'web') {
                 const params = new URLSearchParams(window.location.search);
-                const queryToken = params.get('token');
-                const queryUser = params.get('user');
+                const queryError = params.get('error');
+                const queryReason = params.get('reason');
+
+                if (queryError) {
+                    console.error('[DEBUG] [AuthContext] Social login error:', queryError, queryReason);
+                    alert(`로그인 중 오류가 발생했습니다: ${queryReason || queryError}\n\nVercel 환경 변수(KAKAO_CLIENT_SECRET 등)를 다시 확인해 주세요.`);
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }
 
                 if (queryToken && queryUser) {
                     console.log('[DEBUG] [AuthContext] Social login parameters found in URL');
