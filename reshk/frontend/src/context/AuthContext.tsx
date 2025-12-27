@@ -39,18 +39,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 const queryUser = params.get('user');
 
                 if (queryToken && queryUser) {
-                    console.log('Social login redirect detected on web');
+                    console.log('[DEBUG] [AuthContext] Social login parameters found in URL');
+                    console.log('[DEBUG] [AuthContext] Token length:', queryToken.length);
 
-                    // Clear query params IMMEDIATELY to prevent loop on any subsequent re-render
-                    window.history.replaceState({}, document.title, window.location.pathname);
+                    try {
+                        const decodedUser = decodeURIComponent(queryUser);
+                        const parsedUser = JSON.parse(decodedUser);
+                        console.log('[DEBUG] [AuthContext] User data parsed successfully:', parsedUser.email);
 
-                    const parsedUser = JSON.parse(decodeURIComponent(queryUser));
+                        // Clear params to prevent reuse but AFTER we have them
+                        window.history.replaceState({}, document.title, window.location.pathname);
 
-                    // Show alert and then login
-                    await login(queryToken, parsedUser);
-
-                    setIsLoading(false);
-                    return;
+                        await login(queryToken, parsedUser);
+                        setIsLoading(false);
+                        return;
+                    } catch (parseError) {
+                        console.error('[DEBUG] [AuthContext] Failed to parse user data from URL:', parseError);
+                        console.error('[DEBUG] [AuthContext] Raw queryUser:', queryUser);
+                    }
+                } else {
+                    console.log('[DEBUG] [AuthContext] No social login parameters in URL');
                 }
             }
 

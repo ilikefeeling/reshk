@@ -10,7 +10,13 @@ if (Platform.OS !== 'web') {
     WebView = require('react-native-webview').WebView;
 }
 
-const KAKAO_AUTH_URL = `https://kauth.kakao.com/oauth/authorize?client_id=2bc4c5e9fef481cadb721dabddaf85b6&redirect_uri=https://www.lookingall.com/api/auth/kakao/callback&response_type=code`;
+const getKakaoAuthUrl = () => {
+    if (Platform.OS !== 'web') return '';
+    const origin = window.location.origin;
+    const redirectUri = `${origin}/api/auth/kakao/callback`;
+    const state = encodeURIComponent(origin);
+    return `https://kauth.kakao.com/oauth/authorize?client_id=2bc4c5e9fef481cadb721dabddaf85b6&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&state=${state}&prompt=login`;
+};
 
 export default function LoginScreen({ navigation, route }: any) {
     const { login, isLoggedIn } = useAuth();
@@ -44,7 +50,7 @@ export default function LoginScreen({ navigation, route }: any) {
     const handleKakaoLogin = () => {
         if (Platform.OS === 'web') {
             // For Web, direct redirect
-            window.location.href = KAKAO_AUTH_URL;
+            window.location.href = getKakaoAuthUrl();
         } else {
             // For Native, show WebView Modal
             setShowKakao(true);
@@ -113,7 +119,7 @@ export default function LoginScreen({ navigation, route }: any) {
                             <Text style={styles.closeButtonText}>닫기</Text>
                         </TouchableOpacity>
                         <WebView
-                            source={{ uri: KAKAO_AUTH_URL }}
+                            source={{ uri: getKakaoAuthUrl() }}
                             onNavigationStateChange={onNavigationStateChange}
                             javaScriptEnabled={true}
                         />

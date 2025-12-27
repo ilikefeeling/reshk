@@ -222,7 +222,10 @@ export const kakaoCallback = async (req: Request, res: Response) => {
         // Redirect back to frontend with token
         const frontendUser = encodeURIComponent(JSON.stringify({ id: user.id, email: user.email, name: user.name, role: user.role, profileImage: user.profileImage }));
         const finalRedirectUrl = `${frontendOrigin.replace(/\/+$/, '')}/?token=${token}&user=${frontendUser}`;
-        console.log('[DEBUG] Redirecting to:', finalRedirectUrl);
+
+        console.log(`[DEBUG] Final Redirecting to Frontend: ${frontendOrigin}`);
+        console.log(`[DEBUG] Query Token Length: ${token.length}`);
+
         res.redirect(finalRedirectUrl);
     } catch (error: any) {
         console.error('Kakao Callback Error:', error.response?.data || error.message);
