@@ -91,7 +91,7 @@ export const kakaoLogin = async (req: Request, res: Response) => {
 
         // Add client_secret ONLY if provided in env (fixes invalid_client if secret is enabled on Kakao)
         if (process.env.KAKAO_CLIENT_SECRET) {
-            tokenParams.client_secret = process.env.KAKAO_CLIENT_SECRET;
+            tokenParams.client_secret = process.env.KAKAO_CLIENT_SECRET.trim();
         }
 
         const tokenResponse = await axios.post('https://kauth.kakao.com/oauth/token', null, {
@@ -172,7 +172,7 @@ export const kakaoCallback = async (req: Request, res: Response) => {
         };
 
         if (process.env.KAKAO_CLIENT_SECRET) {
-            tokenParams.client_secret = process.env.KAKAO_CLIENT_SECRET;
+            tokenParams.client_secret = process.env.KAKAO_CLIENT_SECRET.trim();
         }
 
         const tokenResponse = await axios.post('https://kauth.kakao.com/oauth/token', null, {
