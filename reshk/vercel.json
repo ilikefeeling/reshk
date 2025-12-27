@@ -13,18 +13,30 @@
       }
     }
   ],
-  "rewrites": [
+  "routes": [
     {
-      "source": "/api/(.*)",
-      "destination": "/backend/src/index.ts"
+      "src": "/api/(.*)",
+      "dest": "/backend/src/index.ts"
     },
     {
-      "source": "/uploads/(.*)",
-      "destination": "/backend/src/index.ts"
+      "src": "/uploads/(.*)",
+      "dest": "/backend/src/index.ts"
     },
     {
-      "source": "/((?!api|uploads|_expo|assets|favicon.ico).*)",
-      "destination": "/index.html"
+      "src": "/_expo/static/(.*)",
+      "dest": "/_expo/static/$1"
+    },
+    {
+      "src": "/assets/(.*)",
+      "dest": "/assets/$1"
+    },
+    {
+      "src": "/favicon.ico",
+      "dest": "/favicon.ico"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }
