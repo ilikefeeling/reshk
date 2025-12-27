@@ -53,7 +53,7 @@ export const createRequest = async (req: AuthRequest, res: Response) => {
                 longitude: longitude ? Number(longitude) : null,
                 images: images || [],
                 metadata: metadata || null,
-                status: status || 'OPEN',
+                status: 'PENDING', // Mandate admin approval
             },
         });
 
