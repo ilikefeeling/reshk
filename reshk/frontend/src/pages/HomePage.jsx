@@ -68,7 +68,6 @@ export default function HomePage() {
                         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#3b82f6" />
                     }
                 >
-                    {/* Banner ... */}
                     {/* Banner */}
                     <View style={styles.banner}>
                         <TouchableOpacity
@@ -239,7 +238,7 @@ const styles = StyleSheet.create({
     },
     serviceInfoRow: {
         flexDirection: 'row',
-        justifyContent: 'between',
+        justifyContent: 'space-between',
         marginBottom: 16,
         marginHorizontal: 16,
     },
@@ -267,7 +266,7 @@ const styles = StyleSheet.create({
     },
     listHeader: {
         flexDirection: 'row',
-        justifyContent: 'between',
+        justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: 8,
         paddingHorizontal: 24,
@@ -307,6 +306,11 @@ const styles = StyleSheet.create({
         backgroundColor: '#f3f4f6',
         borderRadius: 24,
         marginRight: 12,
+        overflow: 'hidden',
+    },
+    thumbnail: {
+        width: '100%',
+        height: '100%',
     },
     itemEmoji: {
         fontSize: 24,
