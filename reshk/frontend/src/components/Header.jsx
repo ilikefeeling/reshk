@@ -27,8 +27,9 @@ export default function Header() {
                 <Text style={styles.logoText}>LookingAll</Text>
             </View>
 
-            {/* Right: Notification and Login/Logout */}
+            {/* Right: Login/Logout (Notification removed) */}
             <View style={styles.rightSection}>
+                <TouchableOpacity
                     style={[styles.loginButton, { backgroundColor: isLoggedIn ? '#ef4444' : '#3b82f6' }]}
                     onPress={handleLoginPress}
                 >
@@ -47,7 +48,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#ffffff',
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'between',
+        justifyContent: 'space-between',
         paddingHorizontal: 16,
         elevation: 4,
         shadowColor: '#000',
@@ -60,6 +61,7 @@ const styles = StyleSheet.create({
         fontSize: 20,
     },
     logoContainer: {
+        flex: 1,
         alignItems: 'center',
     },
     logoText: {
@@ -82,6 +84,6 @@ const styles = StyleSheet.create({
     loginButtonText: {
         fontSize: 14,
         color: '#ffffff',
-        fontWeight: 'medium',
+        fontWeight: '500',
     },
 });
