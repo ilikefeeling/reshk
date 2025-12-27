@@ -143,7 +143,15 @@ export default function HomePage() {
                                 onPress={() => navigation.navigate('RequestDetail', { id: req.id })}
                             >
                                 <View style={styles.itemIconContainer}>
-                                    <Text style={styles.itemEmoji}>{iconMap[req.keyword] || '❓'}</Text>
+                                    {req.images && req.images.length > 0 ? (
+                                        <Image
+                                            source={{ uri: req.images[0] }}
+                                            style={styles.thumbnail}
+                                            resizeMode="cover"
+                                        />
+                                    ) : (
+                                        <Text style={styles.itemEmoji}>{iconMap[req.keyword] || '❓'}</Text>
+                                    )}
                                 </View>
                                 <View style={styles.itemInfo}>
                                     <Text style={styles.itemTitle}>{req.title}</Text>
