@@ -1,17 +1,23 @@
 {
+  "name": "reshk",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
   "scripts": {
-    "start": "cd frontend && npm start",
-    "android": "cd frontend && npm run android",
-    "ios": "cd frontend && npm run ios",
-    "web": "cd frontend && npm run web",
-    "build": "cd backend && npm install && npx prisma generate && cd ../frontend && npm install && npx expo export --platform web"
+    "start": "npm start --workspace=frontend",
+    "android": "npm run android --workspace=frontend",
+    "ios": "npm run ios --workspace=frontend",
+    "web": "npm run web --workspace=frontend",
+    "build": "cd backend && npx prisma generate && cd ../frontend && npm install && npx expo export --platform web"
   },
   "dependencies": {
     "expo": "~54.0.30",
     "react-native-safe-area-context": "^5.6.2",
     "socket.io-client": "^4.8.1"
   },
-  "main": "index.js",
   "devDependencies": {
     "@types/react": "~19.1.10",
     "typescript": "~5.9.2"
