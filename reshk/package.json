@@ -11,7 +11,7 @@
     "android": "npm run android --workspace=frontend",
     "ios": "npm run ios --workspace=frontend",
     "web": "npm run web --workspace=frontend",
-    "build": "echo '--- STARTING MONOREPO BUILD ---' && cd backend && npx prisma generate && cd ../frontend && npm install && echo '--- RUNNING EXPO EXPORT ---' && npx expo export --platform web && echo '--- BUILD COMPLETE. LISTING OUTPUT ---' && ls -R dist && ls -R frontend/dist && echo '--- FINISHED ---'"
+    "build": "echo '--- STARTING ZERO CONFIG BUILD ---' && cd backend && npx prisma generate && cd ../frontend && npm install && echo '--- RUNNING EXPO EXPORT ---' && npx expo export --platform web && echo '--- CONSOLIDATING ASSETS ---' && cd .. && rm -rf public && mkdir -p public && cp -rv frontend/dist/* public/ && echo '--- BUILD COMPLETE. LISTING PUBLIC ---' && ls -R public && echo '--- FINISHED ---'"
   },
   "dependencies": {
     "@google-cloud/vision": "^5.3.4",
