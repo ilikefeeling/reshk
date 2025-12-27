@@ -24,7 +24,7 @@ export default function Header() {
 
             {/* Center: Logo */}
             <View style={styles.logoContainer}>
-                <Text style={styles.logoText}>Looking</Text>
+                <Text style={styles.logoText}>LookingAll</Text>
             </View>
 
             {/* Right: Notification and Login/Logout */}
