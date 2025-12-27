@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/index.ts",
+      "src": "backend/src/index.ts",
       "use": "@vercel/node"
     },
     {
@@ -16,14 +16,14 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/api/index.ts"
+      "destination": "/backend/src/index.ts"
     },
     {
       "source": "/uploads/(.*)",
-      "destination": "/api/index.ts"
+      "destination": "/backend/src/index.ts"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!api|uploads|_expo|assets|favicon.ico).*)",
       "destination": "/index.html"
     }
   ]
