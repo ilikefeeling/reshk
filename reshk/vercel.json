@@ -9,7 +9,7 @@
       "src": "package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "public"
+        "distDir": "frontend/dist"
       }
     }
   ],
@@ -19,7 +19,11 @@
       "destination": "/backend/src/index.ts"
     },
     {
-      "source": "/(.*)",
+      "source": "/uploads/(.*)",
+      "destination": "/backend/src/index.ts"
+    },
+    {
+      "source": "/((?!api|uploads|_expo|assets|favicon.ico).*)",
       "destination": "/index.html"
     }
   ]
