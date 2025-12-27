@@ -80,8 +80,6 @@ export const kakaoLogin = async (req: Request, res: Response) => {
         // We prioritize the incoming request origin to ensure they match perfectly (fixing KOE006/invalid_client)
         const redirectUri = `${origin}/api/auth/kakao/callback`;
 
-        console.log(`[DEBUG] Kakao Login POST: origin=${origin}, redirectUri=${redirectUri}`);
-
         const tokenParams: any = {
             grant_type: 'authorization_code',
             client_id: '2bc4c5e9fef481cadb721dabddaf85b6',
@@ -136,11 +134,7 @@ export const kakaoLogin = async (req: Request, res: Response) => {
 
         res.status(200).json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role, profileImage: user.profileImage } });
     } catch (error: any) {
-        if (error.response) {
-            console.error('[DEBUG] Kakao Token Exchange Fail:', JSON.stringify(error.response.data, null, 2));
-        } else {
-            console.error('Kakao Login Error:', error.message);
-        }
+        console.error('Kakao Login Error:', error.response?.data || error.message);
         res.status(500).json({ message: 'Social login failed', error: error.response?.data?.error_description || error.message });
     }
 };
@@ -161,9 +155,6 @@ export const kakaoCallback = async (req: Request, res: Response) => {
         // redirectUri MUST match what was sent during the code request
         const redirectUri = `${origin}/api/auth/kakao/callback`;
 
-        console.log(`[DEBUG] Kakao Callback: protocol=${req.protocol}, host=${req.get('host')}, redirectUri=${redirectUri}`);
-
-        console.log('[DEBUG] Step 1: Requesting Kakao Token...');
         const tokenParams: any = {
             grant_type: 'authorization_code',
             client_id: '2bc4c5e9fef481cadb721dabddaf85b6',
@@ -181,27 +172,22 @@ export const kakaoCallback = async (req: Request, res: Response) => {
                 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
             },
         });
-        console.log('[DEBUG] Step 1 Success: Token received');
 
         const accessToken = tokenResponse.data.access_token;
-        console.log('[DEBUG] Step 2: Requesting User Info...');
         const userResponse = await axios.get('https://kapi.kakao.com/v2/user/me', {
             headers: {
                 Authorization: `Bearer ${accessToken}`,
                 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
             },
         });
-        console.log('[DEBUG] Step 2 Success: User info received', userResponse.data.id);
 
         const kakaoUser = userResponse.data;
         const email = kakaoUser.kakao_account?.email || `kakao_${kakaoUser.id}@kakao.user`;
         const name = kakaoUser.properties?.nickname || 'Kakao User';
         const profileImage = kakaoUser.properties?.profile_image;
 
-        console.log('[DEBUG] Step 3: DB Lookup/Create for email:', email);
         let user = await prisma.user.findUnique({ where: { email } });
         if (!user) {
-            console.log('[DEBUG] Step 3: User not found, creating...');
             user = await prisma.user.create({
                 data: {
                     email,
@@ -210,26 +196,18 @@ export const kakaoCallback = async (req: Request, res: Response) => {
                     passwordHash: 'SOCIAL_LOGIN',
                 },
             });
-            console.log('[DEBUG] Step 3: User created');
-        } else {
-            console.log('[DEBUG] Step 3: User found', user.id);
         }
 
-        console.log('[DEBUG] Step 4: Generating JWT...');
         const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
-        console.log('[DEBUG] Step 4 Success: JWT generated');
 
         // Redirect back to frontend with token
         const frontendUser = encodeURIComponent(JSON.stringify({ id: user.id, email: user.email, name: user.name, role: user.role, profileImage: user.profileImage }));
         const finalRedirectUrl = `${frontendOrigin.replace(/\/+$/, '')}/?token=${token}&user=${frontendUser}`;
 
-        console.log(`[DEBUG] Final Redirecting to Frontend: ${frontendOrigin}`);
-        console.log(`[DEBUG] Query Token Length: ${token.length}`);
-
         res.redirect(finalRedirectUrl);
     } catch (error: any) {
         const errorMsg = error.response?.data?.error_description || error.message;
-        console.error('[DEBUG] Kakao Callback Error:', JSON.stringify(error.response?.data || error.message, null, 2));
+        console.error('Kakao Callback Error:', error.response?.data || error.message);
 
         const { state } = req.query;
         const frontendOrigin = state ? decodeURIComponent(state as string) : '/';

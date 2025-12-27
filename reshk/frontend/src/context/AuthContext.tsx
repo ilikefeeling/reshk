@@ -41,32 +41,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 const queryReason = params.get('reason');
 
                 if (queryError) {
-                    console.error('[DEBUG] [AuthContext] Social login error:', queryError, queryReason);
-                    alert(`로그인 중 오류가 발생했습니다: ${queryReason || queryError}\n\nVercel 환경 변수(KAKAO_CLIENT_SECRET 등)를 다시 확인해 주세요.`);
+                    console.error('Social login error:', queryError, queryReason);
                     window.history.replaceState({}, document.title, window.location.pathname);
                 }
 
                 if (queryToken && queryUser) {
-                    console.log('[DEBUG] [AuthContext] Social login parameters found in URL');
-                    console.log('[DEBUG] [AuthContext] Token length:', queryToken.length);
-
                     try {
                         const decodedUser = decodeURIComponent(queryUser);
                         const parsedUser = JSON.parse(decodedUser);
-                        console.log('[DEBUG] [AuthContext] User data parsed successfully:', parsedUser.email);
 
-                        // Clear params to prevent reuse but AFTER we have them
+                        // Clear params to prevent reuse
                         window.history.replaceState({}, document.title, window.location.pathname);
 
                         await login(queryToken, parsedUser);
                         setIsLoading(false);
                         return;
                     } catch (parseError) {
-                        console.error('[DEBUG] [AuthContext] Failed to parse user data from URL:', parseError);
-                        console.error('[DEBUG] [AuthContext] Raw queryUser:', queryUser);
+                        console.error('Failed to parse user data from URL:', parseError);
                     }
-                } else {
-                    console.log('[DEBUG] [AuthContext] No social login parameters in URL');
                 }
             }
 

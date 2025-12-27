@@ -19,10 +19,8 @@ export default function Header() {
 
     return (
         <View style={styles.container}>
-            {/* Left: Search Icon */}
-            <TouchableOpacity aria-label="Search">
-                <Text style={styles.iconText}>🔍</Text>
-            </TouchableOpacity>
+            {/* Left: Spacer (Search icon removed) */}
+            <View style={{ width: 24 }} />
 
             {/* Center: Logo */}
             <View style={styles.logoContainer}>
