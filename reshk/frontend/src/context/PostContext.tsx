@@ -25,8 +25,32 @@ export const PostProvider = ({ children }: { children: React.ReactNode }) => {
             console.log('[DEBUG] PostContext: Global Refreshing...');
             const response = await api.get(`/requests?t=${Date.now()}`);
             if (response.data && Array.isArray(response.data)) {
+
+                const fixImageUrl = (url: string) => {
+                    if (!url) return '';
+                    if (url.startsWith('http')) {
+                        // 만약 배포 환경(lookingall.com 등)인데 URL이 localhost인 경우 현재 도메인으로 치환
+                        const isProduction = typeof window !== 'undefined' &&
+                            (window.location.hostname.includes('lookingall.com') ||
+                                window.location.hostname.includes('vercel.app'));
+
+                        if (isProduction) {
+                            return url.replace(/https?:\/\/localhost:3002/, window.location.origin)
+                                .replace(/https?:\/\/10\.0\.2\.2:3002/, window.location.origin);
+                        }
+                        return url;
+                    }
+                    // 상대 경로인 경우 현재 origin을 붙여줌
+                    if (url.startsWith('/')) {
+                        const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3002';
+                        return `${origin}${url}`;
+                    }
+                    return url;
+                };
+
                 const mappedData = response.data.map((req: any) => ({
                     ...req,
+                    images: (req.images || []).map(fixImageUrl),
                     reward: `₩${Number(req.rewardAmount).toLocaleString()}`,
                     date: new Date(req.createdAt).toLocaleDateString(),
                     keyword: req.category === 'LOST' || req.category === 'FOUND'
