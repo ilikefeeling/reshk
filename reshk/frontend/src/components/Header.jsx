@@ -29,10 +29,6 @@ export default function Header() {
 
             {/* Right: Notification and Login/Logout */}
             <View style={styles.rightSection}>
-                <TouchableOpacity aria-label="Notifications" style={styles.notificationIcon}>
-                    <Text style={styles.iconText}>🔔</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
                     style={[styles.loginButton, { backgroundColor: isLoggedIn ? '#ef4444' : '#3b82f6' }]}
                     onPress={handleLoginPress}
                 >
