@@ -96,7 +96,7 @@ app.get('/', (req, res) => {
 // 에러 핸들러 (마지막에 등록)
 app.use(errorHandler);
 
-if (process.env.NODE_ENV !== 'production' || process.env.VERCEL !== '1') {
+if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test' && process.env.VERCEL !== '1') {
     server.listen(port, () => {
         console.log(`Server is running on http://0.0.0.0:${port}`);
     });

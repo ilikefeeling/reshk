@@ -2,6 +2,7 @@
   "expo": {
     "name": "Looking",
     "slug": "looking-app",
+    "description": "분실물과 습득물을 연결하는 통합 플랫폼 Looking입니다.",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
