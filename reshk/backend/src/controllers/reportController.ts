@@ -93,7 +93,7 @@ export const createReport = async (req: AuthRequest, res: Response) => {
                 capturedAt,
                 verificationScore: finalVerificationScore,
                 aiScore,
-                status // 'ACCEPTED' if score >= 0.95, else 'PENDING'
+                status: 'PENDING' // Mandate admin approval
             },
         });
 

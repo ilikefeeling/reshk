@@ -110,7 +110,7 @@ export const getRequests = async (req: AuthRequest, res: Response) => {
             // 기본적으로 보여줄 상태들
             // 승인된 제보(ACCEPTED)도 목록에 노출될 수 있도록 추가
             whereClause.status = {
-                in: ['OPEN', 'APPROVED', 'IN_PROGRESS', 'PENDING', 'PENDING_DEPOSIT', 'ACCEPTED']
+                in: ['OPEN', 'APPROVED', 'IN_PROGRESS', 'ACCEPTED']
             };
         }
 
@@ -352,7 +352,7 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
 export const getPendingRequests = async (req: AuthRequest, res: Response) => {
     try {
         const requests = await prisma.request.findMany({
-            where: { status: 'PENDING_DEPOSIT' },
+            where: { status: { in: ['PENDING', 'PENDING_DEPOSIT'] } },
             include: {
                 user: {
                     select: { id: true, name: true, phone: true },
