@@ -4,7 +4,7 @@
     "android": "cd frontend && npm run android",
     "ios": "cd frontend && npm run ios",
     "web": "cd frontend && npm run web",
-    "build": "cd backend && npm install && npx prisma generate && cd ../frontend && npm install && npx expo export --platform web"
+    "build": "cd backend && npm install && npx prisma generate && cd ../frontend && npm install && npx expo export --platform web && cd .. && rm -rf dist && mv frontend/dist dist"
   },
   "dependencies": {
     "expo": "~54.0.30",
