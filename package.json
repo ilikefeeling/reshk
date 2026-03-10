@@ -11,7 +11,7 @@
     "android": "npm run android --workspace=frontend",
     "ios": "npm run ios --workspace=frontend",
     "web": "npm run web --workspace=frontend",
-    "build": "cd backend && npx prisma generate && cd ../frontend && npm install && npx expo export --platform web && cd .. && rm -rf public && mkdir -p public && cp -rv frontend/dist/* public/"
+    "build": "cd backend && npx prisma generate && cd ../frontend && npm install && npx expo export --platform web && cd .. && rm -rf public && mkdir -p public && cp -rv frontend/dist/* public/ && echo 'google.com, pub-5225442926231030, DIRECT, f08c47fec0942fa0' > public/ads.txt"
   },
   "dependencies": {
     "@google-cloud/vision": "^5.3.4",
